@@ -8,7 +8,7 @@
 import { useEffect, useRef } from "react"
 import { GlobeInteractive } from "@/components/ui/cobe-globe-interactive"
 
-const DASHBOARD_URL = import.meta.env.VITE_DASHBOARD_URL ?? "http://localhost:3000"
+const DASHBOARD_URL = import.meta.env.VITE_DASHBOARD_URL ?? "http://104.248.112.79:3000"
 
 export default function Hero() {
   const globeRef = useRef<HTMLDivElement>(null)

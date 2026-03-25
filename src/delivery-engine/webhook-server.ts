@@ -12,6 +12,7 @@ import * as http from 'http'
 import { handlePageOpened, handleReplyWebhook, PageOpenedPayload, ReplyWebhookPayload } from './webhook-handlers'
 import { handleIncomingReply, PrimeboxWebhookEvent } from '../primebox/index'
 import { log } from '../lib/supabase'
+import { runOnce } from '../orchestrator/index'
 
 const PORT = parseInt(process.env.WEBHOOK_PORT ?? '3001', 10)
 
@@ -26,13 +27,28 @@ function readBody(req: http.IncomingMessage): Promise<string> {
 
 function send(res: http.ServerResponse, status: number, data: unknown): void {
   const body = JSON.stringify(data)
-  res.writeHead(status, { 'Content-Type': 'application/json' })
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  })
   res.end(body)
 }
 
 const server = http.createServer(async (req, res) => {
   const url  = req.url  ?? '/'
   const method = req.method ?? 'GET'
+
+  if (method === 'OPTIONS') {
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    })
+    res.end()
+    return
+  }
 
   if (method !== 'POST') {
     send(res, 405, { error: 'method_not_allowed' })
@@ -92,6 +108,14 @@ const server = http.createServer(async (req, res) => {
     if (url === '/api/webhooks/primebox') {
       const result = await handleIncomingReply(payload as PrimeboxWebhookEvent)
       send(res, 200, result)
+      return
+    }
+
+    // Manual trigger endpoint — called by dashboard button
+    if (url === '/api/trigger/orchestrate' && method === 'POST') {
+      log('[webhook-server] Manual orchestrator trigger received')
+      runOnce(false).catch(err => log(`[webhook-server] Trigger error: ${err instanceof Error ? err.message : String(err)}`))
+      send(res, 200, { ok: true, message: 'Orchestrator pass started' })
       return
     }
 

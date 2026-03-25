@@ -26,7 +26,7 @@ import { createSequence } from '../delivery-engine/index'
 import { checkOverduePilots } from '../pilot-runner/index'
 import { supabase, log } from '../lib/supabase'
 
-const INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
+const INTERVAL_MS = 3 * 60 * 60 * 1000 // 3 hours
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 
@@ -39,7 +39,7 @@ interface ReadyCompany {
 
 // ─── SINGLE PASS ────────────────────────────────────────────────────────────
 
-async function runOnce(dryRun: boolean): Promise<void> {
+export async function runOnce(dryRun: boolean): Promise<void> {
   log('[orchestrator] ─── Starting pass ───')
 
   // Step 1: Find companies ready for outreach

@@ -9,7 +9,7 @@
 
 import { ArrowRight, Zap } from "lucide-react"
 
-const DASHBOARD_URL = (import.meta as any).env?.VITE_DASHBOARD_URL ?? "http://localhost:3000"
+const DASHBOARD_URL = (import.meta as any).env?.VITE_DASHBOARD_URL ?? "http://104.248.112.79:3000"
 
 const METRICS = [
   {
