@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import Hero from '../components/Landing/Hero'
-import LiveCounter from '../components/Landing/LiveCounter'
+import LogoTicker from '../components/ui/LogoTicker'
 import Timeline from '../components/Landing/Timeline'
 import PilotForm from '../components/Landing/PilotForm'
 
@@ -12,7 +12,7 @@ function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-white selection:bg-[#F59E0B]/30 selection:text-white font-sans">
       <Hero />
-      <LiveCounter />
+      <LogoTicker />
       <Timeline />
       <PilotForm />
       

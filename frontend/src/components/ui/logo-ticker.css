@@ -1,0 +1,191 @@
+.logo-ticker-section {
+  background-color: #0D0D0D;
+  color: white;
+  padding: 6rem 0;
+  overflow: hidden;
+  position: relative;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Invisible soft fade at the very top and bottom — kills the hard border */
+.logo-ticker-section::before,
+.logo-ticker-section::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 80px;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.logo-ticker-section::before {
+  top: 0;
+  background: linear-gradient(to bottom, #0D0D0D 0%, transparent 100%);
+}
+
+.logo-ticker-section::after {
+  bottom: 0;
+  background: linear-gradient(to top, #0D0D0D 0%, transparent 100%);
+}
+
+.logo-ticker-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+  position: relative;
+  z-index: 10;
+}
+
+.logo-ticker-headline {
+  font-size: 2.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(180deg, #FFFFFF 0%, #A1A1AA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.logo-ticker-subtitle {
+  color: #71717A;
+  font-size: 1.125rem;
+  margin-bottom: 4rem;
+  font-weight: 400;
+}
+
+/* Ticker gradient masks */
+.ticker-mask {
+  position: relative;
+  width: 100vw;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 15%,
+    black 85%,
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 15%,
+    black 85%,
+    transparent
+  );
+}
+
+/* Individual track */
+.ticker-track {
+  display: flex;
+  width: max-content;
+  align-items: center;
+  gap: 4rem;
+}
+
+.track-foreground {
+  animation: scroll-left 40s linear infinite;
+  padding-left: 2rem;
+}
+
+.track-background {
+  animation: scroll-left 55s linear infinite reverse;
+  opacity: 0.4;
+  filter: blur(1.5px);
+  transform: scale(0.9);
+  padding-left: 1rem;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+/* Logo Item */
+.logo-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #E4E4E7;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: default;
+  /* Floating effect */
+  animation: float 6s ease-in-out infinite;
+}
+
+.logo-item:hover {
+  transform: scale(1.1) translateY(-2px);
+  color: #FFFFFF;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.logo-item svg {
+  width: 28px;
+  height: 28px;
+  opacity: 0.9;
+  transition: opacity 0.3s ease;
+}
+
+.logo-item:hover svg {
+  opacity: 1;
+}
+
+/* Add slight delay staggering for the floating effect based on child index */
+.logo-item:nth-child(even) {
+  animation-delay: 2s;
+  animation-duration: 7s;
+}
+.logo-item:nth-child(3n) {
+  animation-delay: 1s;
+  animation-duration: 8s;
+}
+.logo-item:nth-child(4n) {
+  animation-delay: 3s;
+  animation-duration: 5s;
+}
+
+/* Animations */
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .logo-ticker-headline {
+    font-size: 2rem;
+  }
+  .ticker-track {
+    gap: 3rem;
+  }
+  .logo-item {
+    font-size: 1.25rem;
+  }
+  .logo-item svg {
+    width: 24px;
+    height: 24px;
+  }
+}
