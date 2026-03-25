@@ -17,9 +17,11 @@
     "test": "npx jest"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
+    "@anthropic-ai/sdk": "^0.80.0",
+    "@supabase/supabase-js": "^2.100.0",
     "dotenv": "^17.3.1",
     "node-fetch": "^3.3.2",
+    "openai": "^6.32.0",
     "puppeteer": "^21.6.0"
   },
   "devDependencies": {
