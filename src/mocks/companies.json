@@ -1,0 +1,116 @@
+[
+  {
+    "id": "mock-001-0000-0000-0000-000000000001",
+    "name": "TalentFlow",
+    "domain": "talentflow.io",
+    "logo_url": "https://logo.clearbit.com/talentflow.io",
+    "industry": "HR Tech",
+    "size": 45,
+    "location": "Austin, TX",
+    "icp": "Mid-market companies hiring 50-200 employees in USA",
+    "acv_estimate": 24000,
+    "sdr_count": 3,
+    "pain_score": 87,
+    "monthly_loss_estimate": 5709,
+    "decision_maker": {
+      "name": "Sarah Chen",
+      "title": "VP of Sales",
+      "email": "s.chen@talentflow.io",
+      "linkedin_url": "https://linkedin.com/in/sarah-chen-vp-sales"
+    },
+    "tech_stack": ["Instantly", "HubSpot", "ZoomInfo"],
+    "competitor_using_ai": null,
+    "salesforce_contact_id": null,
+    "status": "profiled",
+    "signals": [
+      {
+        "type": "hiring_sdrs",
+        "detail": "Posted 3 SDR job listings on LinkedIn in the last 30 days",
+        "source": "LinkedIn",
+        "pain_points": 35
+      }
+    ],
+    "created_at": "2026-03-25T10:00:00Z",
+    "updated_at": "2026-03-25T10:00:00Z"
+  },
+  {
+    "id": "mock-002-0000-0000-0000-000000000002",
+    "name": "Finstack",
+    "domain": "finstack.com",
+    "logo_url": "https://logo.clearbit.com/finstack.com",
+    "industry": "FinTech",
+    "size": 120,
+    "location": "New York, NY",
+    "icp": "Series A/B SaaS companies needing financial operations tooling",
+    "acv_estimate": 48000,
+    "sdr_count": 6,
+    "pain_score": 75,
+    "monthly_loss_estimate": 11418,
+    "decision_maker": {
+      "name": "Marcus Webb",
+      "title": "Head of Sales",
+      "email": "m.webb@finstack.com",
+      "linkedin_url": "https://linkedin.com/in/marcus-webb-sales"
+    },
+    "tech_stack": ["Apollo", "Salesforce", "Outreach"],
+    "competitor_using_ai": null,
+    "salesforce_contact_id": null,
+    "status": "profiled",
+    "signals": [
+      {
+        "type": "funding",
+        "detail": "Raised $18M Series B on March 10, 2026 (Crunchbase)",
+        "source": "Crunchbase",
+        "pain_points": 30
+      },
+      {
+        "type": "hiring_sdrs",
+        "detail": "Posted 2 BDR roles on Greenhouse in the last 30 days",
+        "source": "LinkedIn",
+        "pain_points": 35
+      }
+    ],
+    "created_at": "2026-03-25T10:05:00Z",
+    "updated_at": "2026-03-25T10:05:00Z"
+  },
+  {
+    "id": "mock-003-0000-0000-0000-000000000003",
+    "name": "DevReach",
+    "domain": "devreach.io",
+    "logo_url": "https://logo.clearbit.com/devreach.io",
+    "industry": "DevTools",
+    "size": 28,
+    "location": "San Francisco, CA",
+    "icp": "Engineering teams at B2B SaaS companies 20-150 employees",
+    "acv_estimate": 18000,
+    "sdr_count": 2,
+    "pain_score": 92,
+    "monthly_loss_estimate": 3806,
+    "decision_maker": {
+      "name": "Priya Nair",
+      "title": "Founder & CEO",
+      "email": "priya@devreach.io",
+      "linkedin_url": "https://linkedin.com/in/priya-nair-devreach"
+    },
+    "tech_stack": ["Lemlist", "Notion", "Clay"],
+    "competitor_using_ai": null,
+    "salesforce_contact_id": null,
+    "status": "profiled",
+    "signals": [
+      {
+        "type": "g2_negative_review",
+        "detail": "Left 2-star review on Lemlist: 'deliverability issues, support unresponsive'",
+        "source": "G2",
+        "pain_points": 40
+      },
+      {
+        "type": "hiring_sdrs",
+        "detail": "Posted 1 SDR role on LinkedIn 2 weeks ago",
+        "source": "LinkedIn",
+        "pain_points": 35
+      }
+    ],
+    "created_at": "2026-03-25T10:10:00Z",
+    "updated_at": "2026-03-25T10:10:00Z"
+  }
+]
