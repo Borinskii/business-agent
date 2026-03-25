@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import puppeteer from 'puppeteer'
 import { createClient } from '@supabase/supabase-js'
 import { buildReportHTML } from './template'
+import { sf } from '../lib/salesforge'
 import type { Company } from '../types/company'
 import type { ReportContent } from './template'
 
@@ -219,6 +220,18 @@ export async function generatePDF(companyId: string): Promise<GenerateResult> {
       generated_at: new Date().toISOString(),
       failure_reason: null,
     }).eq('id', reportId)
+
+    // ── Update Salesforge custom_vars with pdf_url ────────────────────────────
+    if (company.salesforce_contact_id) {
+      try {
+        await sf.ws.put(`/contacts/${company.salesforce_contact_id}`, {
+          customVars: { pdf_url: pdfUrl },
+        })
+        console.log(`[✓] Salesforge custom_vars updated: pdf_url`)
+      } catch (err) {
+        console.error(`[!] Failed to update Salesforge custom_vars: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
 
     // ── Update company status → content_generated ────────────────────────────
     await supabase.from('companies')

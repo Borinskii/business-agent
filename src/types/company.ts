@@ -147,6 +147,16 @@ export interface FrankReply {
   created_at: string
 }
 
+export interface UploadLog {
+  id: string
+  company_id: string | null
+  action: 'dnc_check' | 'validation' | 'bulk_upload'
+  status: 'success' | 'failed' | 'skipped'
+  response_data: Record<string, unknown> | null
+  error_message: string | null
+  created_at: string
+}
+
 // ─── API RESPONSES ────────────────────────────────────────────────────────────
 
 export interface EnrichmentResult {

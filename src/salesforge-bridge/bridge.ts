@@ -73,13 +73,15 @@ export async function uploadContactToSalesforge(companyId: string) {
     // 2. Email Validation
     log(`[bridge] Starting email validation for ${dm.email}`)
     const valStart = await sf.ws.post<ValidationRunResponse>('/contacts/validation/start', { emails: [dm.email] }).catch((e) => {
-      log(`[bridge] Validation endpoint failing, skipping bounce check natively...`)
+      log(`[bridge] Validation endpoint unavailable, proceeding with warning`)
       return null
     })
-    
+
     if (valStart?.runId) {
+      // Async validation — poll for up to 60s
+      let validated = false
       let attempts = 0
-      while (attempts < 12) { // 60 seconds (12 * 5s)
+      while (attempts < 12) { // 12 × 5s = 60s max
         await new Promise(r => setTimeout(r, 5000))
         const valRes = await sf.ws.get<ValidationResultResponse>(`/validations/${valStart.runId}/results`).catch(() => null)
         if (valRes && valRes.status === 'completed') {
@@ -89,14 +91,37 @@ export async function uploadContactToSalesforge(companyId: string) {
             await logUpload('validation', 'failed', valRes, 'Email is invalid')
             return null
           }
-          await logUpload('validation', 'success', valRes)
+          if (res?.result === 'risky') {
+            log(`[bridge] Email validation: ${dm.email} is risky — proceeding with caution`)
+            await logUpload('validation', 'success', valRes, 'Email is risky but proceeding')
+          } else {
+            await logUpload('validation', 'success', valRes)
+          }
+          validated = true
           break
         }
         attempts++
       }
-    } else if (valStart && (valStart.status === 'invalid' || valStart.result === 'invalid')) {
-       await logUpload('validation', 'failed', valStart, 'Email is invalid')
-       return null
+      if (!validated) {
+        log(`[bridge] Email validation timeout (60s) — proceeding with warning`)
+        await logUpload('validation', 'skipped', null, 'Validation timeout 60s — uploaded without validation')
+      }
+    } else if (valStart) {
+      // Immediate response — check for invalid/risky
+      const immediateResult = valStart.status ?? valStart.result
+      if (immediateResult === 'invalid') {
+        log(`[bridge] Email validation: ${dm.email} is invalid (immediate)`)
+        await logUpload('validation', 'failed', valStart, 'Email is invalid')
+        return null
+      }
+      if (immediateResult === 'risky') {
+        log(`[bridge] Email validation: ${dm.email} is risky — proceeding with caution`)
+      }
+      await logUpload('validation', 'success', valStart)
+    } else {
+      // Validation endpoint unavailable — log warning but proceed
+      log(`[bridge] Email validation skipped — endpoint unavailable`)
+      await logUpload('validation', 'skipped', null, 'Validation endpoint unavailable')
     }
 
     // 3. Bulk Upload

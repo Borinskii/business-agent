@@ -330,7 +330,7 @@ export async function profileCompany(companyId: string): Promise<ProfileResult> 
           name:         `${bestLead.firstName ?? ''} ${bestLead.lastName ?? ''}`.trim(),
           title:        bestLead.jobTitle ?? '',
           email:        enriched.email,
-          linkedin_url: null,
+          linkedin_url: bestLead.linkedinUrl ?? null,
         }
         log(`[profiler] DM email (${enriched.source}): ${enriched.email}`)
       }
@@ -341,21 +341,44 @@ export async function profileCompany(companyId: string): Promise<ProfileResult> 
     log(`[profiler] DM search failed: ${(e as Error).message}`)
   }
 
-  // 5. logo_url fallback
+  // 5. Tech stack detection from job descriptions
+  const KNOWN_TOOLS = ['Instantly', 'Apollo', 'Lemlist', 'Outreach', 'Salesloft', 'HubSpot', 'Salesforce', 'Pipedrive', 'Close', 'Mailshake']
+  let techStack: string[] = []
+
+  try {
+    const jobRes = await lf.post<LfSearchResponse>('/search', {
+      companyDomain: domain,
+      jobTitle: 'SDR',
+      limit: 5,
+    })
+    // Scan job titles and any available description text for known tools
+    const allText = jobRes.leads.map(l =>
+      [l.jobTitle ?? '', l.jobDescription ?? ''].join(' ')
+    ).join(' ').toLowerCase()
+
+    techStack = KNOWN_TOOLS.filter(tool => allText.includes(tool.toLowerCase()))
+    if (techStack.length > 0) {
+      log(`[profiler] Tech stack detected: ${techStack.join(', ')}`)
+    }
+  } catch {
+    log('[profiler] Tech stack detection failed — continuing with empty')
+  }
+
+  // 6. logo_url fallback
   const logoUrl = companyLogo ?? `https://logo.clearbit.com/${domain}`
 
-  // 6. sdr_count
+  // 7. sdr_count
   const sdrCount = (company.sdr_count as number) > 1
     ? (company.sdr_count as number)
     : estimateSdrCount(company.size as number | null)
 
-  // 7. monthly_loss
+  // 8. monthly_loss
   const monthlyLoss = sdrCount * 1903
 
-  // 8. ICP from company description
+  // 9. ICP from company description
   const icp = companyDesc ? companyDesc.slice(0, 200) : null
 
-  // 9. enrichment_score
+  // 10. enrichment_score
   const enrichmentData: EnrichmentData = {
     name:          companyName     ?? (company.name     as string | null),
     industry:      companyIndustry ?? (company.industry as string | null),
@@ -363,7 +386,7 @@ export async function profileCompany(companyId: string): Promise<ProfileResult> 
     location:      companyLocation ?? (company.location as string | null),
     logo_url:      logoUrl,
     decisionMaker,
-    techStack:     [],
+    techStack,
     icp,
   }
   const enrichmentScore = calcEnrichmentScore(enrichmentData)
@@ -398,7 +421,7 @@ export async function profileCompany(companyId: string): Promise<ProfileResult> 
     location:              enrichmentData.location ?? company.location,
     logo_url:              logoUrl,
     decision_maker:        decisionMaker,
-    tech_stack:            enrichmentData.techStack,
+    tech_stack:            techStack,
     monthly_loss_estimate: monthlyLoss,
     sdr_count:             sdrCount,
     status:                'profiled',

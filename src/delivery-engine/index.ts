@@ -126,7 +126,7 @@ export async function createSequenceCore(
     log('[delivery-engine] DRY RUN — no API calls will be made')
     log(`[✓] Workspace created: wks_dryrun_${company.domain}`)
     log(`[✓] Sequence created: seq_dryrun_${company.domain}`)
-    log('[✓] Nodes built: Email Day1 | LinkedIn Day3 | Condition | FOMO Day5')
+    log('[✓] Nodes built: Email Day1 | LinkedIn Day3 | Condition no_reply_48h | FOMO Day5')
     log(`[✓] Contact enrolled: ${company.salesforce_contact_id}`)
     log('[✓] Reply webhook registered')
     if (!opts.skipSupabaseSave) {
@@ -198,7 +198,7 @@ export async function createSequenceCore(
           }],
         },
         {
-          name:     'Follow-up Day 3',
+          name:     'LinkedIn Day 3',
           order:    1,
           waitDays: 2,
           distributionStrategy: 'equal',
@@ -212,9 +212,20 @@ export async function createSequenceCore(
           }],
         },
         {
-          name:     'FOMO Day 5',
+          name:     'Condition: No Reply 48h',
           order:    2,
           waitDays: 2,
+          distributionStrategy: 'equal',
+          filter: {
+            type: 'no_reply',
+            afterHours: 48,
+          },
+          variants: [],
+        },
+        {
+          name:     'FOMO Day 5',
+          order:    3,
+          waitDays: 0,
           distributionStrategy: 'equal',
           variants: [{
             label:              'Main',

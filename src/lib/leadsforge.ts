@@ -47,12 +47,14 @@ export const lf = {
 // ─── Leadsforge types (real API) ─────────────────────────────────────────────
 
 export interface LfLead {
-  id:        string
-  firstName: string | null
-  lastName:  string | null
-  jobTitle:  string | null
-  location:  { city: string | null; state: string | null; country: string | null } | null
-  company:   { name: string | null; domain: string | null } | null
+  id:              string
+  firstName:       string | null
+  lastName:        string | null
+  jobTitle:        string | null
+  jobDescription:  string | null
+  linkedinUrl:     string | null
+  location:        { city: string | null; state: string | null; country: string | null } | null
+  company:         { name: string | null; domain: string | null } | null
 }
 
 export interface LfSearchResponse {

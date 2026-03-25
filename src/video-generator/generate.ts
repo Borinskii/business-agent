@@ -5,6 +5,7 @@ import * as https from 'https'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
+import { sf } from '../lib/salesforge'
 import type { Company } from '../types/company'
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
@@ -336,6 +337,18 @@ export async function generateVideo(companyId: string): Promise<GenerateResult> 
     video_provider: provider,
     ...(videoUrl ? { status: 'ready' } : {}),
   }).eq('id', report.id)
+
+  // ── Update Salesforge custom_vars with video_url ────────────────────────
+  if (videoUrl && company.salesforce_contact_id) {
+    try {
+      await sf.ws.put(`/contacts/${company.salesforce_contact_id}`, {
+        customVars: { video_url: videoUrl },
+      })
+      console.log(`[✓] Salesforge custom_vars updated: video_url`)
+    } catch (err) {
+      console.error(`[!] Failed to update Salesforge custom_vars: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
 
   // Update companies.status → content_generated (if pdf was also done)
   await supabase.from('companies')
