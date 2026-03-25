@@ -49,7 +49,7 @@ function formatMoney(n: number): string {
 export function buildReportHTML(company: Company, content: ReportContent): string {
   const slug = company.domain.replace(/\./g, '-')
   const logoUrl = company.logo_url ?? buildLogoSvg(company.name)
-  const pageUrl = `https://phantom-pipeline.com/${slug}`
+  const pageUrl = `http://104.248.112.79/${slug}`
 
   const primarySignal = Array.isArray((company as unknown as Record<string, unknown>).signals)
     ? ((company as unknown as Record<string, unknown>).signals as Array<{ detail: string }>)[0]?.detail ?? ''

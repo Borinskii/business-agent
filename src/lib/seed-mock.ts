@@ -90,7 +90,7 @@ async function seed() {
 
     // Create a mock report entry so the live counter page works
     const slug = c.domain.replace(/\./g, '-')
-    const pageUrl = `https://phantom-pipeline.com/${slug}`
+    const pageUrl = `http://104.248.112.79/${slug}`
 
     const { error: reportErr } = await supabase
       .from('reports')

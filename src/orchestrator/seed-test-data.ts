@@ -19,7 +19,7 @@ dotenv.config()
 import { supabase, log } from '../lib/supabase'
 import companies from '../mocks/companies.json'
 
-const APP_URL = process.env.APP_URL ?? 'https://phantom-pipeline.com'
+const APP_URL = process.env.APP_URL ?? 'http://104.248.112.79'
 
 // Valid UUIDs for test companies (deterministic, based on mock index)
 const TEST_UUIDS = [

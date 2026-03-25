@@ -275,7 +275,7 @@ export async function createSequenceCore(
 
   // ── Step 6: Register reply webhook ──────────────────────────────────────
   //    POST /workspaces/{id}/integrations/webhooks — CreateWebhookRequest
-  const appUrl = process.env.APP_URL ?? 'https://phantom-pipeline.com'
+  const appUrl = process.env.APP_URL ?? 'http://104.248.112.79'
 
   interface SFWebhook { id: string }
   const webhook = await sf.post<SFWebhook>(`/workspaces/${workspace.id}/integrations/webhooks`, {
@@ -386,7 +386,7 @@ export async function handlePageOpened(companyId: string): Promise<void> {
     .eq('id', companyId)
     .single()
 
-  const appUrl = process.env.APP_URL ?? 'https://phantom-pipeline.com'
+  const appUrl = process.env.APP_URL ?? 'http://104.248.112.79'
   const name    = (company?.name as string | undefined) ?? 'your team'
   const industry = (company?.industry as string | undefined) ?? 'your industry'
   const seqId   = seq.salesforge_sequence_id as string

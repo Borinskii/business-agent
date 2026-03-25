@@ -57,6 +57,6 @@ lossPerSecond = monthlyWaste × sdrCount / 30 / 24 / 3600
 ## INTEGRATIONS
 - Salesforge workspace: wks_7cksiak4q2sqw6mawjut
 - Booking URL: meetings-eu1.hubspot.com/franksondors/
-- Live counter domain: phantom-pipeline.com
+- Live counter domain: 104.248.112.79
 - PDF storage: Supabase Storage bucket 'reports'
 - Video storage: Supabase Storage bucket 'videos'

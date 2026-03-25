@@ -158,7 +158,7 @@ export async function generatePDF(companyId: string): Promise<GenerateResult> {
   }
 
   const slug = company.domain.replace(/\./g, '-')
-  const personalPageUrl = `${process.env.APP_URL ?? 'https://phantom-pipeline.com'}/${slug}`
+  const personalPageUrl = `${process.env.APP_URL ?? 'http://104.248.112.79'}/${slug}`
 
   // ── Check for existing report (don't regenerate) ──────────────────────────
   const { data: existing } = await supabase

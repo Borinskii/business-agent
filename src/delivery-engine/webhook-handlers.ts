@@ -44,7 +44,7 @@ export async function handlePageOpened(payload: PageOpenedPayload): Promise<Page
     .eq('id', company_id)
     .single()
 
-  const appUrl = process.env.APP_URL ?? 'https://phantom-pipeline.com'
+  const appUrl = process.env.APP_URL ?? 'http://104.248.112.79'
 
   interface SFNode { id: string }
   await sf.post<SFNode>('/multichannel/nodes/actions', {

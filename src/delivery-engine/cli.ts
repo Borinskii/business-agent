@@ -44,10 +44,10 @@ const MOCK_COMPANY: Company = {
 const MOCK_REPORT: Report = {
   id:                 'mock-rep-0000-0000-0000-000000000001',
   company_id:         'mock-001-0000-0000-0000-000000000001',
-  pdf_url:            'https://phantom-pipeline.com/reports/acmecorp.pdf',
-  video_url:          'https://phantom-pipeline.com/videos/acmecorp.mp4',
+  pdf_url:            'http://104.248.112.79/reports/acmecorp.pdf',
+  video_url:          'http://104.248.112.79/videos/acmecorp.mp4',
   personal_page_slug: 'acmecorp-com',
-  personal_page_url:  'https://phantom-pipeline.com/p/acmecorp-com',
+  personal_page_url:  'http://104.248.112.79/p/acmecorp-com',
   win_card_url:       null,
   status:             'ready',
   failure_reason:     null,

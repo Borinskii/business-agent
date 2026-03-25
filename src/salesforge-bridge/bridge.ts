@@ -150,7 +150,7 @@ export async function uploadContactToSalesforge(companyId: string) {
           monthly_loss: company.monthly_loss_estimate || 0,
           sdr_count: company.sdr_count,
           pain_signal: company.signals?.[0]?.detail || 'Rapidly growing pipeline',
-          personal_page_url: `https://phantom-pipeline.com/${slug}`,
+          personal_page_url: `http://104.248.112.79/${slug}`,
           pdf_url: 'pending',
           video_url: 'pending'
         }
