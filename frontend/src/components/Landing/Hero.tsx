@@ -65,18 +65,12 @@ export default function Hero() {
       rafId = requestAnimationFrame(update)
     }
 
-    const preventUpScroll = (e: WheelEvent) => {
-      if (window.scrollY === 0 && e.deltaY < 0) e.preventDefault()
-    }
-
     update()
     window.scrollTo(0, 0)
     window.addEventListener("scroll", onScroll, { passive: true })
-    window.addEventListener("wheel", preventUpScroll, { passive: false })
 
     return () => {
       window.removeEventListener("scroll", onScroll)
-      window.removeEventListener("wheel", preventUpScroll)
       cancelAnimationFrame(rafId)
     }
   }, [])
@@ -87,7 +81,7 @@ export default function Hero() {
 
   return (
     // 4 × 100vh so there is enough scroll room for all 3 phases
-    <section className="relative w-full bg-white isolate h-[400vh]">
+    <section className="relative w-full bg-white isolate h-[400vh] overscroll-none">
       <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-end">
 
         {/* ── Phase 1 title ── */}
