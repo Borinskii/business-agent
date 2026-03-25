@@ -91,7 +91,7 @@ export default function Hero() {
         {/* ── Phase 1 title ── */}
         <div
           ref={titleRef}
-          className="absolute top-0 left-0 right-0 flex flex-col items-center pt-4 px-6 z-30"
+          className="absolute top-0 left-0 right-0 flex flex-col items-center pt-4 px-6 z-30 pointer-events-none"
           style={{ willChange: "opacity, transform" }}
         >
           <span className="inline-flex items-center py-1 px-4 rounded-full border border-[#783FDD]/30 text-[#783FDD] text-xs font-bold mb-5 uppercase tracking-[0.2em]">
@@ -122,31 +122,31 @@ export default function Hero() {
             Scalable Growth
           </span>
           <h2 className="text-4xl xl:text-5xl font-extrabold text-gray-900 leading-[1.1] mb-6">
-            Персонализированная,<br />
-            <span className="text-[#783FDD]">масштабируемая</span><br />
-            система привлечения<br />
-            новых клиентов
+            Personalized,<br />
+            <span className="text-[#783FDD]">scalable</span><br />
+            client acquisition<br />
+            system
           </h2>
           <p className="text-lg text-gray-500 font-light leading-relaxed mb-10 max-w-md">
-            Phantom Pipeline автоматически находит, квалифицирует и связывается с вашими идеальными клиентами — 24/7, без команды SDR.
+            Phantom Pipeline automatically finds, qualifies, and contacts your ideal clients — 24/7, without an SDR team.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
             <button className="bg-[#783FDD] hover:bg-[#6032B0] text-white font-semibold py-4 px-8 rounded-full text-lg shadow-[0_10px_40px_rgba(120,63,221,0.3)] transition-all hover:scale-105 active:scale-95">
-              Запустить Auto-SDR
+              Launch Auto-SDR
             </button>
             <button className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 font-medium py-4 px-7 rounded-full text-lg transition-all">
-              Смотреть демо
+              Watch Demo
             </button>
           </div>
           {/* Quick stats */}
           <div className="grid grid-cols-2 gap-6 mt-12 pt-8 border-t border-gray-100 max-w-sm">
             <div>
               <div className="text-3xl font-bold text-gray-900">1.4s</div>
-              <div className="text-sm text-gray-500">Генерация отчёта</div>
+              <div className="text-sm text-gray-500">Report Generation</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-[#783FDD]">100%</div>
-              <div className="text-sm text-gray-500">Автопилот</div>
+              <div className="text-sm text-gray-500">Autopilot</div>
             </div>
           </div>
         </div>
