@@ -5,6 +5,7 @@
   "scripts": {
     "signal:scan": "npx ts-node src/signal-hunter/cli.ts",
     "profile:company": "npx ts-node src/profiler/cli.ts",
+    "bridge:upload": "npx ts-node src/salesforge-bridge/cli.ts",
     "content:generate": "npx ts-node src/pdf-generator/cli.ts",
     "sequence:create": "npx ts-node src/delivery-engine/cli.ts",
     "pilot:start": "npx ts-node src/pilot-runner/cli.ts",

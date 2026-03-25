@@ -6,6 +6,7 @@
 import { supabase, log } from '../lib/supabase'
 import { scanLinkedIn }  from './sources/linkedin'
 import { scanCrunchbase } from './sources/crunchbase'
+import { scanG2Reviews } from './sources/g2'
 import type { RawSignal } from './sources/linkedin'
 
 export type ScanSource = 'linkedin' | 'crunchbase' | 'g2'
@@ -125,11 +126,6 @@ async function processSignal(raw: RawSignal): Promise<'queued' | 'duplicate'> {
 // ─── Main entry ───────────────────────────────────────────────────────────────
 
 export async function runScan(source: ScanSource, limit: number): Promise<ScannerResult> {
-  if (source === 'g2') {
-    log('[scanner] G2 scanner not yet implemented (Day 4–5)')
-    return { scanned: 0, found: 0, queued: 0, duplicates: 0 }
-  }
-
   // Rate limit check
   if (await isRateLimited(source)) {
     log(`[scanner] ${SOURCE_LABEL[source]} scan skipped — already scanned within 6 hours`)
@@ -138,11 +134,18 @@ export async function runScan(source: ScanSource, limit: number): Promise<Scanne
 
   log(`[scanner] Scanning ${SOURCE_LABEL[source]}...`)
 
-  let rawSignals: RawSignal[]
+  let rawSignals: RawSignal[] = []
   try {
-    rawSignals = source === 'linkedin'
-      ? await scanLinkedIn(limit)
-      : await scanCrunchbase(limit)
+    if (source === 'linkedin') {
+      rawSignals = await scanLinkedIn(limit)
+    } else if (source === 'crunchbase') {
+      rawSignals = await scanCrunchbase(limit)
+    } else if (source === 'g2') {
+      // G2 inserts directly into the database to handle unique review deduplication safely
+      await scanG2Reviews('instantly')
+      await scanG2Reviews('apollo-io')
+      return { scanned: limit, found: 0, queued: 0, duplicates: 0 } 
+    }
   } catch (e: unknown) {
     log(`[scanner] ${SOURCE_LABEL[source]} scan error: ${(e as Error).message}`)
     throw e
