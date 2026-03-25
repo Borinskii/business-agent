@@ -1,0 +1,59 @@
+
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <title>Animation Viewer</title>
+    <style>
+      body { margin: 0; background: #111; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+      #viewer { margin-top: 20px; border: 2px solid #333; max-width: 90vw; }
+      #slider { width: 90vw; margin: 20px; }
+      .controls { padding: 20px; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <div class="controls">
+      <h2>Scroll Animation Scrubber</h2>
+      <input type="range" id="slider" min="0" value="0" step="1">
+      <div id="scrollLabel">Scroll: 0px</div>
+    </div>
+    <img id="viewer" src="frame_0000.png" />
+    
+    <script>
+      const slider = document.getElementById('slider');
+      const viewer = document.getElementById('viewer');
+      const label = document.getElementById('scrollLabel');
+      
+      const frameCount = 31;
+      const scrollStep = 50;
+      slider.max = frameCount - 1;
+      
+      // Preload images
+      const images = [];
+      for(let i=0; i<frameCount; i++) {
+         const img = new Image();
+         img.src = 'frame_' + i.toString().padStart(4, '0') + '.png';
+         images.push(img);
+      }
+      
+      slider.addEventListener('input', (e) => {
+         const idx = parseInt(e.target.value);
+         viewer.src = images[idx].src;
+         label.innerText = 'Scroll: ' + (idx * scrollStep) + 'px';
+      });
+      
+      // Auto-play initially
+      let autoPlayIdx = 0;
+      let interval = setInterval(() => {
+         autoPlayIdx++;
+         if(autoPlayIdx >= frameCount) {
+             clearInterval(interval);
+         } else {
+             slider.value = autoPlayIdx;
+             viewer.src = images[autoPlayIdx].src;
+             label.innerText = 'Scroll: ' + (autoPlayIdx * scrollStep) + 'px';
+         }
+      }, 50); // 20fps
+    </script>
+  </body>
+  </html>
+  

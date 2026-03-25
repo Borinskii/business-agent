@@ -18,6 +18,13 @@ OpenAPI.TOKEN = async () => {
   return localStorage.getItem("access_token") || ""
 }
 
+// Prevent browser from restoring a non-zero scroll position on page load.
+// Without this, Vite/Chrome may scroll to a remembered position, allowing upward scroll.
+if (typeof window !== "undefined") {
+  history.scrollRestoration = "manual"
+  window.scrollTo(0, 0)
+}
+
 const handleApiError = (error: Error) => {
   if (error instanceof ApiError && [401, 403].includes(error.status)) {
     localStorage.removeItem("access_token")
