@@ -41,6 +41,8 @@ export default function Hero() {
         const tyPhase1 = HALF * (1 - p1) + BOTTOM_OFFSET   // rises; +OFFSET keeps top from being clipped
         const txPhase3 = (W * 0.22) * p3
         globeRef.current.style.transform = `translateY(${tyPhase1}px) translateX(${txPhase3}px)`
+        globeRef.current.style.pointerEvents = p3 > 0.8 ? "auto" : "none"
+        ;(window as any).globeP3 = p3
       }
 
       // Title: fades out in first half of phase 1
