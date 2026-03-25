@@ -12,7 +12,22 @@
       "Bash(echo $SUPABASE_SERVICE_ROLE_KEY)",
       "Bash(node -e \":*)",
       "Bash(npx tsc:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(curl -s -X POST http://localhost:3001/api/webhooks/reply -H \"Content-Type: application/json\" -d '{\"\"event\"\":\"\"email.replied\"\",\"\"contactId\"\":\"\"cnt_test_talentflow_io\"\",\"\"workspaceId\"\":\"\"wks_7cksiak4q2sqw6mawjutx\"\",\"\"mailboxId\"\":\"\"test-mailbox-001\"\",\"\"emailId\"\":\"\"test-unique-001\"\",\"\"threadId\"\":\"\"test-thread-001\"\",\"\"messageText\"\":\"\"Yes, this looks interesting. Lets do the pilot.\"\",\"\"sentiment\"\":\"\"positive\"\"}')",
+      "Bash(curl:*)",
+      "Bash(cd:*)",
+      "WebFetch(domain:api.salesforge.ai)",
+      "Bash(npx ts-node -e \":*)",
+      "Bash(ls D:/projects/business-agent/src/live-counter/.env*)",
+      "Bash(grep -oP \"\"message\"\":\"\"[^\"\"]*\"\")",
+      "Bash(find /d/projects/business-agent/src/live-counter -type d -name [slug]*)",
+      "Bash(find . -type f -name *.ts -path */delivery-engine/* -o -path */pilot-runner/* -o -path */primebox/* -o -path */orchestrator/*)",
+      "Bash(npm run:*)",
+      "WebSearch",
+      "Bash(sed -i 's/SHOTSTACK_API_KEY=.*/SHOTSTACK_API_KEY=ab1vNCOhBoLzo3xSjrcIum5BYfmTBqD3Z1VPbxVr/' .env)",
+      "Bash(sed -i 's/SHOTSTACK_ENV=v1/SHOTSTACK_ENV=stage/' .env)",
+      "Bash(find /d/projects/business-agent/src -path */api/* -name route.ts -o -path */api/* -name route.js)"
     ]
   }
 }
