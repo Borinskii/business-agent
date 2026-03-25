@@ -1,4 +1,11 @@
 /**
+ * @copyright 2026 vladnidz <vladyslav.nidzelskyi@edu.rtu.lv> — Phantom Pipeline
+ * @license Proprietary. Hackathon submission. All rights reserved.
+ * @author vladnidz <vladyslav.nidzelskyi@edu.rtu.lv>
+ * @created 2026-03-25
+ */
+
+/**
  * Tests: Signal Hunter (Day 2)
  * Covers: linkedin source, TechCrunch RSS funding source, scanner (dedup, rate limit, pain_score)
  */

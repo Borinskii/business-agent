@@ -1,4 +1,11 @@
 /**
+ * @copyright 2026 vladnidz <vladyslav.nidzelskyi@edu.rtu.lv> — Phantom Pipeline
+ * @license Proprietary. Hackathon submission. All rights reserved.
+ * @author vladnidz <vladyslav.nidzelskyi@edu.rtu.lv>
+ * @created 2026-03-25
+ */
+
+/**
  * Seed 3 mock companies into Supabase for integration testing.
  * Sets status='content_generated', fills salesforce_contact_id,
  * and creates matching reports with status='ready'.

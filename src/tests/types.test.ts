@@ -1,4 +1,11 @@
 /**
+ * @copyright 2026 vladnidz <vladyslav.nidzelskyi@edu.rtu.lv> — Phantom Pipeline
+ * @license Proprietary. Hackathon submission. All rights reserved.
+ * @author vladnidz <vladyslav.nidzelskyi@edu.rtu.lv>
+ * @created 2026-03-25
+ */
+
+/**
  * Tests: src/types/company.ts
  * Validates that all required interfaces exist and that their
  * runtime shapes are correct. Uses companies.json as a fixture.

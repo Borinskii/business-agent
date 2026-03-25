@@ -1,8 +1,24 @@
 # Phantom Pipeline
 
-Autonomous AI SDR system that finds US companies by pain signals and delivers personalized Pipeline Autopsy PDF + Sora AI video via Salesforge before they know about it. Agent Frank handles replies and runs 48H free pilots.
+> **Copyright (c) 2026 vladnidz — vladyslav.nidzelskyi@edu.rtu.lv. All rights reserved.**
+> Proprietary. Hackathon submission. Unauthorized use prohibited.
+
+Autonomous AI SDR system that finds US companies by pain signals and delivers personalized Pipeline Autopsy PDF + Shotstack video via Salesforge before they know about it. Agent Frank handles replies and runs 48H free pilots.
 
 **Goal:** Salesforge 500 → 1,400+ demos/month
+
+## Authors
+
+| Name | Role | Contact |
+|---|---|---|
+| **vladnidz** (Vladyslav Nidzelskyi) | Lead Developer | vladyslav.nidzelskyi@edu.rtu.lv |
+| Boris Arutinov | Frontend / Dashboard | borinskii242@gmail.com |
+| Alexey Buryanov | Backend / Pipeline | buryanov.alexey@gmail.com |
+| Kirill Pochinchik | Execution Layer | kirill.po05@gmail.com |
+| Ivan Kluss | Data Layer | klussivan@gmail.com |
+
+Built for **Salesforge Hackathon, March 2026**.
+Repository: https://github.com/Borinskii/business-agent (private during competition)
 
 ## Architecture
 

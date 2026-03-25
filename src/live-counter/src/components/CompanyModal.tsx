@@ -1,3 +1,10 @@
+/**
+ * @copyright 2026 vladnidz <vladyslav.nidzelskyi@edu.rtu.lv> — Phantom Pipeline
+ * @license Proprietary. Hackathon submission. All rights reserved.
+ * @author vladnidz <vladyslav.nidzelskyi@edu.rtu.lv>
+ * @created 2026-03-25
+ */
+
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Video, Banknote, Mailbox, Activity, ExternalLink } from 'lucide-react';

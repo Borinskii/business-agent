@@ -1,3 +1,10 @@
+/**
+ * @copyright 2026 vladnidz <vladyslav.nidzelskyi@edu.rtu.lv> — Phantom Pipeline
+ * @license Proprietary. Hackathon submission. All rights reserved.
+ * @author vladnidz <vladyslav.nidzelskyi@edu.rtu.lv>
+ * @created 2026-03-25
+ */
+
 import { createFileRoute } from '@tanstack/react-router'
 import Hero from '../components/Landing/Hero'
 import LogoTicker from '../components/ui/LogoTicker'

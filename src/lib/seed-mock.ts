@@ -1,4 +1,11 @@
 /**
+ * @copyright 2026 vladnidz <vladyslav.nidzelskyi@edu.rtu.lv> — Phantom Pipeline
+ * @license Proprietary. Hackathon submission. All rights reserved.
+ * @author vladnidz <vladyslav.nidzelskyi@edu.rtu.lv>
+ * @created 2026-03-25
+ */
+
+/**
  * Seed mock companies + reports into Supabase for Live Counter demo.
  * Run AFTER migrations are applied:
  *   npx ts-node src/lib/seed-mock.ts

@@ -1,3 +1,10 @@
+/**
+ * @copyright 2026 vladnidz <vladyslav.nidzelskyi@edu.rtu.lv> — Phantom Pipeline
+ * @license Proprietary. Hackathon submission. All rights reserved.
+ * @author vladnidz <vladyslav.nidzelskyi@edu.rtu.lv>
+ * @created 2026-03-25
+ */
+
 import { supabase, log } from '../lib/supabase'
 import { sf } from '../lib/salesforge'
 import type { Company, Signal } from '../types/company'

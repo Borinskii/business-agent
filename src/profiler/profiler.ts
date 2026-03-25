@@ -1,4 +1,11 @@
 /**
+ * @copyright 2026 vladnidz <vladyslav.nidzelskyi@edu.rtu.lv> — Phantom Pipeline
+ * @license Proprietary. Hackathon submission. All rights reserved.
+ * @author vladnidz <vladyslav.nidzelskyi@edu.rtu.lv>
+ * @created 2026-03-25
+ */
+
+/**
  * Company Profiler
  * Enriches a company via Leadsforge, finds decision maker, calculates loss
  */
