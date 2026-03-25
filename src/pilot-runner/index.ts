@@ -111,11 +111,35 @@ export async function startPilot(
   })
   log(`[✓] Pilot workspace: ${pilotWorkspace.id}`)
 
-  // ── Step 2: Product — skip if no SALESFORGE_PRODUCT_ID ────────────────
-  // Product creation via API returns 500 for some accounts.
-  // When SALESFORGE_PRODUCT_ID is set, we could use it — but user confirmed
-  // it's not available yet. Pipeline continues without it.
-  log('[~] Product creation skipped (SALESFORGE_PRODUCT_ID not set)')
+  // ── Step 2: Create product (knowledge base) in pilot workspace ─────
+  log('[pilot-runner] Creating product (knowledge base)...')
+  let pilotProductId: string | null = null
+  try {
+    interface SFProductResponse { id: string }
+    const signals = await supabase
+      .from('signals')
+      .select('detail')
+      .eq('company_id', companyId)
+      .limit(1)
+    const signalDetail = (signals.data?.[0] as { detail: string } | undefined)?.detail ?? ''
+
+    const product = await sf.post<SFProductResponse>(
+      `/workspaces/${pilotWorkspace.id}/products`,
+      {
+        product: {
+          name:                 company.name,
+          idealCustomerProfile: icp,
+          pain:                 `Key problem: ${signalDetail || 'scaling outbound sales efficiently'}`,
+          solution:             `${company.name} helps ${company.icp ?? 'businesses'} solve this`,
+          language:             'american_english',
+        },
+      }
+    )
+    pilotProductId = product.id
+    log(`[✓] Product created: ${pilotProductId}`)
+  } catch (err) {
+    log(`[~] Product creation failed: ${err instanceof Error ? err.message : String(err)} — continuing`)
+  }
 
   // ── Step 3: Find 50 leads via Leadsforge ──────────────────────────────
   log(`[pilot-runner] Searching Leadsforge for: "${icp}"`)
@@ -167,10 +191,18 @@ export async function startPilot(
   const senderName = company.decision_maker?.name ?? company.name
   log(`[pilot-runner] Creating pilot sequence (sender: ${senderName})`)
 
+  // Use pilot product or fallback to env SALESFORGE_PRODUCT_ID
+  const seqProductId = pilotProductId ?? process.env.SALESFORGE_PRODUCT_ID
+  if (!seqProductId) {
+    log('[✗] No productId available — cannot create sequence')
+    throw Object.assign(new Error('no_product_id: create product in Salesforge dashboard and set SALESFORGE_PRODUCT_ID in .env'), { code: 503 })
+  }
+
   const pilotSeq = await sf.post<SFSequence>(
     `/workspaces/${pilotWorkspace.id}/sequences`,
     {
       name:      `Pilot_${company.name}`,
+      productId: seqProductId,
       senderName,
       language:  'american_english',
       timezone:  'America/New_York',
