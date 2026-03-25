@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { ArrowRight, Zap, CheckCircle2 } from "lucide-react"
+import { ArrowRight, Zap } from "lucide-react"
+
+const DASHBOARD_URL = (import.meta as any).env?.VITE_DASHBOARD_URL ?? "http://localhost:3000"
 
 const METRICS = [
   {
@@ -36,13 +37,6 @@ const METRICS = [
 ]
 
 export default function PilotForm() {
-  const [email, setEmail] = useState("")
-  const [submitted, setSubmitted] = useState(false)
-
-  function handleLaunch(e: React.FormEvent) {
-    e.preventDefault()
-    setSubmitted(true)
-  }
 
   return (
     <section className="py-28 bg-white relative border-t border-gray-100">
@@ -70,41 +64,18 @@ export default function PilotForm() {
               <h3 className="text-3xl xl:text-4xl font-extrabold text-white leading-tight mb-4">
                 Your pipeline,<br />
                 on autopilot.<br />
-                <span className="text-[#783FDD]">Starting now.</span>
+                <span className="text-[#783FDD]">Get 1000+ demos within this system.</span>
               </h3>
-              <p className="text-white/60 text-sm leading-relaxed max-w-xs">
-                Agent Frank finds leads, builds personalised reports, generates AI videos, and sends them — 24/7.
-              </p>
             </div>
 
             <div className="relative z-10 mt-10">
-              {!submitted ? (
-                <form onSubmit={handleLaunch} className="flex flex-col gap-3">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your work email"
-                    required
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#783FDD]/60 transition-all"
-                  />
-                  <button
-                    type="submit"
-                    className="w-full flex items-center justify-center gap-2.5 bg-[#783FDD] hover:bg-[#8f55e8] text-white font-bold py-4 px-6 rounded-xl transition-all text-base shadow-[0_8px_40px_rgba(120,63,221,0.45)] hover:shadow-[0_12px_50px_rgba(120,63,221,0.6)] hover:-translate-y-0.5 active:scale-[0.98]"
-                  >
-                    <Zap className="w-5 h-5 fill-white" />
-                    Launch Auto SDR
-                  </button>
-                </form>
-              ) : (
-                <div className="flex items-center gap-3 bg-green-500/10 border border-green-500/30 rounded-2xl px-5 py-4">
-                  <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
-                  <div>
-                    <div className="text-white font-semibold text-sm">Agent Frank is starting up</div>
-                    <div className="text-white/50 text-xs mt-0.5">Check your inbox — first leads in under 24h</div>
-                  </div>
-                </div>
-              )}
+              <button
+                onClick={() => { window.location.href = DASHBOARD_URL }}
+                className="w-full flex items-center justify-center gap-2.5 bg-[#783FDD] hover:bg-[#8f55e8] text-white font-bold py-4 px-6 rounded-xl transition-all text-base shadow-[0_8px_40px_rgba(120,63,221,0.45)] hover:shadow-[0_12px_50px_rgba(120,63,221,0.6)] hover:-translate-y-0.5 active:scale-[0.98]"
+              >
+                <Zap className="w-5 h-5 fill-white" />
+                Launch Auto SDR
+              </button>
             </div>
           </div>
 
@@ -158,15 +129,13 @@ export default function PilotForm() {
               ))}
             </div>
 
-            <a
-              href="https://meetings-eu1.hubspot.com/franksondors/"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => { window.location.href = DASHBOARD_URL }}
               className="inline-flex items-center gap-2 text-sm font-semibold text-gray-900/40 hover:text-[#783FDD] transition-colors group"
             >
               See full system in action
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </a>
+            </button>
           </div>
 
         </div>

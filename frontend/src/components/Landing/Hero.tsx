@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react"
 import { GlobeInteractive } from "@/components/ui/cobe-globe-interactive"
 
+const DASHBOARD_URL = import.meta.env.VITE_DASHBOARD_URL ?? "http://localhost:3000"
+
 export default function Hero() {
   const globeRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLDivElement>(null)
@@ -127,11 +129,11 @@ export default function Hero() {
             Phantom Pipeline automatically finds, qualifies, and contacts your ideal clients — 24/7, without an SDR team.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
-            <button className="bg-[#783FDD] hover:bg-[#6032B0] text-white font-semibold py-4 px-8 rounded-full text-lg shadow-[0_10px_40px_rgba(120,63,221,0.3)] transition-all hover:scale-105 active:scale-95">
+            <button
+              onClick={() => { window.location.href = DASHBOARD_URL }}
+              className="bg-[#783FDD] hover:bg-[#6032B0] text-white font-semibold py-4 px-8 rounded-full text-lg shadow-[0_10px_40px_rgba(120,63,221,0.3)] transition-all hover:scale-105 active:scale-95"
+            >
               Launch Auto-SDR
-            </button>
-            <button className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 font-medium py-4 px-7 rounded-full text-lg transition-all">
-              Watch Demo
             </button>
           </div>
           {/* Quick stats */}
