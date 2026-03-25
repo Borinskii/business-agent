@@ -27,7 +27,10 @@
       "WebSearch",
       "Bash(sed -i 's/SHOTSTACK_API_KEY=.*/SHOTSTACK_API_KEY=ab1vNCOhBoLzo3xSjrcIum5BYfmTBqD3Z1VPbxVr/' .env)",
       "Bash(sed -i 's/SHOTSTACK_ENV=v1/SHOTSTACK_ENV=stage/' .env)",
-      "Bash(find /d/projects/business-agent/src -path */api/* -name route.ts -o -path */api/* -name route.js)"
+      "Bash(find /d/projects/business-agent/src -path */api/* -name route.ts -o -path */api/* -name route.js)",
+      "Skill(update-config)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
