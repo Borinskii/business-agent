@@ -79,27 +79,36 @@ export interface CreateSequenceOptions {
 
 // ─── PRODUCT CREATION (with graceful 500 handling) ───────────────────────────
 
-async function ensureProduct(workspaceId: string, companyName: string): Promise<string> {
+async function ensureProduct(workspaceId: string, companyName: string): Promise<string | null> {
   // 1. Use env var if already configured
   const envProductId = process.env.SALESFORGE_PRODUCT_ID
   if (envProductId) return envProductId
 
   // 2. Check for existing products in workspace
-  interface SFProductList { data: SFProduct[] }
-  const list = await sf.get<SFProductList>(`/workspaces/${workspaceId}/products`)
-  if (list.data?.length > 0 && list.data[0]?.id) {
-    return list.data[0].id
+  try {
+    interface SFProductList { data: SFProduct[] }
+    const list = await sf.get<SFProductList>(`/workspaces/${workspaceId}/products`)
+    if (list.data?.length > 0 && list.data[0]?.id) {
+      return list.data[0].id
+    }
+  } catch {
+    log('[delivery-engine] Could not list products — continuing without product')
   }
 
   // 3. Try to create a new product
   // NOTE: Salesforge POST /products returns 500 for some accounts —
   // this is a known API issue. Set SALESFORGE_PRODUCT_ID in .env as a workaround.
-  const product = await sf.post<SFProduct>(`/workspaces/${workspaceId}/products`, {
-    name:           companyName,
-    description:    `Outreach campaign for ${companyName}`,
-    targetAudience: 'Sales leaders at B2B companies',
-  })
-  return product.id
+  try {
+    const product = await sf.post<SFProduct>(`/workspaces/${workspaceId}/products`, {
+      name:           companyName,
+      description:    `Outreach campaign for ${companyName}`,
+      targetAudience: 'Sales leaders at B2B companies',
+    })
+    return product.id
+  } catch {
+    log('[delivery-engine] Product creation failed (known Salesforge issue) — continuing without product')
+    return null
+  }
 }
 
 // ─── CORE: accepts pre-loaded company + report ────────────────────────────────
@@ -140,7 +149,13 @@ export async function createSequenceCore(
   // ── Step 2: Ensure product exists (required by Salesforge for sequences) ─
   log('[delivery-engine] Ensuring product...')
   const productId = await ensureProduct(workspace.id, company.name)
-  log(`[✓] Product: ${productId}`)
+  if (productId) {
+    log(`[✓] Product: ${productId}`)
+  } else {
+    const msg = 'Cannot create sequence: SALESFORGE_PRODUCT_ID not set and product creation API returns 500. Create a product in Salesforge dashboard and add SALESFORGE_PRODUCT_ID=prod_xxx to .env'
+    log(`[✗] ${msg}`)
+    throw Object.assign(new Error(msg), { code: 503 })
+  }
 
   // ── Step 3: Create sequence ───────────────────────────────────────────────
   log('[delivery-engine] Creating sequence...')
