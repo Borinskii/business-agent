@@ -29,7 +29,7 @@ interface Report {
 }
 
 interface PageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 // ─── SUPABASE (server-side) ───────────────────────────────────────────────────
@@ -44,7 +44,8 @@ function getSupabase() {
 // ─── METADATA ─────────────────────────────────────────────────────────────────
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const domain = params.slug.replace(/-/g, '.')
+  const { slug } = await params
+  const domain = slug.replace(/-/g, '.')
   const supabase = getSupabase()
   const { data: company } = await supabase
     .from('companies')
@@ -78,7 +79,8 @@ export async function generateStaticParams() {
 export const revalidate = 60
 
 export default async function SlugPage({ params }: PageProps) {
-  const domain = params.slug.replace(/-/g, '.')
+  const { slug } = await params
+  const domain = slug.replace(/-/g, '.')
   const supabase = getSupabase()
 
   const { data: company } = await supabase
@@ -125,7 +127,7 @@ export default async function SlugPage({ params }: PageProps) {
           monthlyLoss={monthlyLoss}
           sdrCount={company.sdr_count}
           companyId={company.id}
-          slug={params.slug}
+          slug={slug}
         />
 
         <p className="text-slate-400 text-sm mt-4 mb-8">
