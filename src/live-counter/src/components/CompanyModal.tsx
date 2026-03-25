@@ -5,23 +5,11 @@ import { FileText, Video, Banknote, Mailbox, Activity } from 'lucide-react';
 export interface CompanyData {
   id: string;
   name: string;
-  domain: string;
-  industry?: string;
-  sdr_count?: number;
-  monthly_loss_estimate?: number;
-  decision_maker?: { name?: string; email?: string; title?: string } | null;
+  dm: string;
+  loss: string;
   status: string;
-  pain_score?: number;
-  report?: {
-    pdf_url?: string | null;
-    video_url?: string | null;
-    status?: string;
-    personal_page_slug?: string;
-  } | null;
-  sequence?: {
-    salesforge_sequence_id?: string;
-    status?: string;
-  } | null;
+  pdfReady?: boolean;
+  videoReady?: boolean;
 }
 
 interface ModalProps {
@@ -38,15 +26,6 @@ export function CompanyModal({ isOpen, onClose, company }: ModalProps) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
-
-  const monthlyLossDisplay = company?.monthly_loss_estimate
-    ? '$' + company.monthly_loss_estimate.toLocaleString() + '/mo'
-    : '—';
-
-  const dmDisplay =
-    company?.decision_maker?.name ??
-    company?.decision_maker?.email ??
-    '—';
 
   return (
     <AnimatePresence>
@@ -73,8 +52,8 @@ export function CompanyModal({ isOpen, onClose, company }: ModalProps) {
             {/* MacOS Header bar */}
             <div className="flex items-center justify-between px-4 py-3 bg-slate-50/80 border-b border-slate-200/60 backdrop-blur-sm">
               <div className="flex gap-2">
-                <button
-                  onClick={onClose}
+                <button 
+                  onClick={onClose} 
                   className="w-3 h-3 rounded-full bg-[#FF5F56] hover:bg-[#E0443E] transition-colors shadow-sm"
                 />
                 <button className="w-3 h-3 rounded-full bg-[#FFBD2E] hover:bg-[#DEA123] transition-colors shadow-sm" />
@@ -88,24 +67,28 @@ export function CompanyModal({ isOpen, onClose, company }: ModalProps) {
 
             {/* Modal Content */}
             <div className="flex-1 flex flex-col lg:flex-row bg-white overflow-hidden">
-
-              {/* Left Column: PDF Viewer */}
+              
+              {/* Left Column: PDF Viewer Mock */}
               <div className="w-full lg:w-1/2 h-full border-r border-slate-100 flex flex-col bg-slate-50/30">
                 <div className="p-4 border-b border-slate-100 flex items-center gap-2 text-slate-700 font-semibold bg-white">
                   <FileText className="w-5 h-5 text-indigo-500" />
                   Pipeline Autopsy Report (PDF)
                 </div>
-                <div className="flex-1 p-4 overflow-hidden">
-                  {company.report?.pdf_url ? (
-                    <iframe
-                      src={company.report.pdf_url}
-                      className="w-full h-full rounded-xl"
-                    />
-                  ) : company.report?.status === 'failed' ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
-                      <FileText className="w-10 h-10 mb-3 text-rose-300" />
-                      <span className="text-rose-500 font-semibold">PDF generation failed</span>
-                      <span className="text-xs text-slate-400 mt-1">Check the pipeline logs for details.</span>
+                <div className="flex-1 p-8 overflow-y-auto">
+                  {company.pdfReady ? (
+                    <div className="w-full bg-white shadow-lg rounded-xl min-h-[600px] border border-slate-200 p-8 flex flex-col items-center">
+                      <div className="w-32 h-32 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
+                        <FileText className="w-12 h-12 text-indigo-400" />
+                      </div>
+                      <h2 className="text-2xl font-bold text-slate-900 mb-2">{company.name}</h2>
+                      <p className="text-slate-500 mb-8 text-center max-w-sm">Detailed breakdown of pipeline inefficiencies and automation opportunities.</p>
+                      
+                      <div className="w-full space-y-4">
+                        <div className="h-4 bg-slate-100 rounded-full w-full"></div>
+                        <div className="h-4 bg-slate-100 rounded-full w-5/6"></div>
+                        <div className="h-4 bg-slate-100 rounded-full w-full"></div>
+                        <div className="h-4 bg-slate-100 rounded-full w-4/6"></div>
+                      </div>
                     </div>
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
@@ -123,12 +106,16 @@ export function CompanyModal({ isOpen, onClose, company }: ModalProps) {
                   Sora AI Pitch Video
                 </div>
                 <div className="p-8 pb-0">
-                  {company.report?.video_url ? (
-                    <video
-                      src={company.report.video_url}
-                      controls
-                      className="w-full rounded-xl"
-                    />
+                  {company.videoReady ? (
+                    <div className="w-full aspect-video bg-slate-900 rounded-xl relative overflow-hidden group shadow-lg cursor-pointer">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <div className="w-0 h-0 border-l-[16px] border-l-white border-y-[10px] border-y-transparent ml-2" />
+                        </div>
+                      </div>
+                      <div className="absolute bottom-4 left-4 text-white font-medium">Pitch_to_{company.dm.split(' ')[0]}_Final.mp4</div>
+                    </div>
                   ) : (
                     <div className="w-full aspect-video bg-slate-50 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-slate-400">
                       <Video className="w-8 h-8 mb-2 opacity-50 animate-pulse" />
@@ -139,26 +126,26 @@ export function CompanyModal({ isOpen, onClose, company }: ModalProps) {
 
                 <div className="p-8 grid grid-cols-2 gap-4">
                   <div className="col-span-2 text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Extraction Stats</div>
-
+                  
                   <div className="p-4 rounded-xl bg-rose-50 border border-rose-100 flex flex-col gap-1">
                     <div className="flex items-center gap-2 text-rose-600 text-sm font-semibold">
                       <Banknote className="w-4 h-4" /> Est. Monthly Loss
                     </div>
-                    <div className="text-2xl font-black text-rose-700">{monthlyLossDisplay}</div>
+                    <div className="text-2xl font-black text-rose-700">{company.loss}</div>
                   </div>
 
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col gap-1">
                     <div className="flex items-center gap-2 text-slate-600 text-sm font-semibold">
                       <Mailbox className="w-4 h-4" /> Target DM
                     </div>
-                    <div className="text-lg font-bold text-slate-800 truncate">{dmDisplay}</div>
+                    <div className="text-lg font-bold text-slate-800 truncate">{company.dm}</div>
                   </div>
 
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col gap-1 col-span-2">
                     <div className="flex items-center gap-2 text-slate-600 text-sm font-semibold">
                       <Activity className="w-4 h-4" /> Pipeline Status
                     </div>
-                    <div className="text-lg font-bold text-slate-800 capitalize">{company.status.replace(/_/g, ' ')}</div>
+                    <div className="text-lg font-bold text-slate-800 capitalize">{company.status.replace('_', ' ')}</div>
                   </div>
                 </div>
 
