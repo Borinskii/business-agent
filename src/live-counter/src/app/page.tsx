@@ -121,11 +121,31 @@ export default function Dashboard() {
           </div>
           <span className="font-bold text-xl tracking-tight">Phantom <span className="text-purple-600">Pipeline</span></span>
         </div>
-        <div className="flex gap-4">
+        <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-slate-500 px-3 py-1 bg-white rounded-full shadow-sm border border-slate-100 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             System Online
           </span>
+          <div className="flex items-center gap-1.5">
+            {[
+              { initials: "VN", href: "https://www.linkedin.com/in/vladyslav-nidzelskyi-38217a3b9/" },
+              { initials: "BA", href: "https://www.linkedin.com/in/boris-arutinov-16471233a" },
+              { initials: "OB", href: "https://www.linkedin.com/in/oleksii-burianov-096648397/" },
+              { initials: "KP", href: "https://www.linkedin.com/in/kirill-pochinchik-6ba461330/" },
+              { initials: "IK", href: "https://www.linkedin.com/in/ivan-kliuss" },
+            ].map((m) => (
+              <a
+                key={m.initials}
+                href={m.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={m.initials}
+                className="w-7 h-7 rounded-full bg-purple-100 border border-purple-200 hover:bg-purple-600 hover:border-purple-600 hover:text-white transition-all flex items-center justify-center text-[10px] font-bold text-purple-700"
+              >
+                {m.initials}
+              </a>
+            ))}
+          </div>
         </div>
       </nav>
 

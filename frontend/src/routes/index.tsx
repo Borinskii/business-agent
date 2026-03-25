@@ -30,20 +30,27 @@ function LandingPage() {
           <p className="text-white/40 text-sm text-center mb-14">Reach out to anyone on the team directly on LinkedIn</p>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-            {[1, 2, 3, 4, 5].map((i) => (
+            {[
+              { name: "Vladyslav N.", role: "Lead Dev", href: "https://www.linkedin.com/in/vladyslav-nidzelskyi-38217a3b9/", initials: "VN" },
+              { name: "Boris A.", role: "Frontend", href: "https://www.linkedin.com/in/boris-arutinov-16471233a", initials: "BA" },
+              { name: "Oleksii B.", role: "Backend", href: "https://www.linkedin.com/in/oleksii-burianov-096648397/", initials: "OB" },
+              { name: "Kirill P.", role: "Execution", href: "https://www.linkedin.com/in/kirill-pochinchik-6ba461330/", initials: "KP" },
+              { name: "Ivan K.", role: "Data Layer", href: "https://www.linkedin.com/in/ivan-kliuss", initials: "IK" },
+            ].map((member) => (
               <a
-                key={i}
-                href="#"
+                key={member.name}
+                href={member.href}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="group flex flex-col items-center gap-3 bg-white/5 hover:bg-[#783FDD]/15 border border-white/10 hover:border-[#783FDD]/40 rounded-2xl p-5 transition-all"
               >
-                {/* Avatar placeholder */}
-                <div className="w-14 h-14 rounded-full bg-white/10 border border-white/10 group-hover:border-[#783FDD]/40 transition-all flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white/20 group-hover:text-[#783FDD]/60 transition-colors" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                  </svg>
+                <div className="w-14 h-14 rounded-full bg-[#783FDD]/20 border border-[#783FDD]/30 group-hover:border-[#783FDD]/60 transition-all flex items-center justify-center">
+                  <span className="text-[#783FDD] font-bold text-sm group-hover:text-white transition-colors">{member.initials}</span>
                 </div>
-                {/* Name placeholder */}
-                <div className="w-16 h-2.5 rounded-full bg-white/10 group-hover:bg-[#783FDD]/20 transition-colors" />
+                <div className="text-center">
+                  <div className="text-white/80 text-xs font-semibold group-hover:text-white transition-colors">{member.name}</div>
+                  <div className="text-white/30 text-[10px] mt-0.5">{member.role}</div>
+                </div>
               </a>
             ))}
           </div>
@@ -51,7 +58,9 @@ function LandingPage() {
           {/* GitHub repo */}
           <div className="mt-10 flex justify-center">
             <a
-              href="#"
+              href="https://github.com/Borinskii/business-agent"
+              target="_blank"
+              rel="noopener noreferrer"
               className="group inline-flex items-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/25 rounded-2xl px-6 py-4 transition-all"
             >
               <svg className="w-5 h-5 text-white/50 group-hover:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24">
@@ -59,7 +68,7 @@ function LandingPage() {
               </svg>
               <div className="text-left">
                 <div className="text-white/80 text-sm font-semibold group-hover:text-white transition-colors">GitHub Repository</div>
-                <div className="text-white/30 text-xs">github.com/...</div>
+                <div className="text-white/30 text-xs">github.com/Borinskii/business-agent</div>
               </div>
             </a>
           </div>
