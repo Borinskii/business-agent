@@ -90,7 +90,7 @@ export interface Report {
   win_card_url: string | null
   status: ReportStatus
   failure_reason: string | null
-  video_provider: 'sora' | 'heygen' | 'skipped' | null
+  video_provider: 'shotstack' | 'sora' | 'heygen' | 'skipped' | null
   video_script: unknown | null
   generated_at: string | null
   created_at: string

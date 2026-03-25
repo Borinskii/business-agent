@@ -1,30 +1,25 @@
-import Anthropic from '@anthropic-ai/sdk'
-import OpenAI from 'openai'
 import { createClient } from '@supabase/supabase-js'
-import * as https from 'https'
-import * as fs from 'fs'
-import * as os from 'os'
-import * as path from 'path'
 import { sf } from '../lib/salesforge'
 import type { Company } from '../types/company'
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
-interface VideoScene {
-  duration_seconds: number
-  visual: string
-  narration: string
-  on_screen_text: string
-}
-
-interface VideoScript {
-  scenes: VideoScene[]
+interface ReportContent {
+  headline: string
+  diagnosis: string
+  monthly_loss_dollars: number
+  annual_loss_dollars: number
+  hours_wasted_monthly: number
+  demos_missed_monthly: number
+  competitor_insight: string
+  solution_preview: string
+  cta_text: string
 }
 
 interface GenerateResult {
   report_id: string
   video_url: string | null
-  video_provider: 'sora' | 'heygen' | 'skipped'
+  video_provider: 'shotstack' | 'skipped'
   status: 'ready'
 }
 
@@ -41,227 +36,417 @@ function getSupabase() {
   )
 }
 
-// ─── FIXED 5-SCENE STRUCTURE (per spec) ──────────────────────────────────────
+const SHOTSTACK_KEY = () => process.env.SHOTSTACK_API_KEY ?? ''
+const SHOTSTACK_ENV = () => process.env.SHOTSTACK_ENV ?? 'v1'
+const SHOTSTACK_BASE = () => `https://api.shotstack.io`
 
-const SCENE_STRUCTURE = [
-  { duration_seconds: 15, label: 'SDR manual work, clock ticking (0–15s)' },
-  { duration_seconds: 25, label: 'Money counter dropping, competitors growing (15–40s)' },
-  { duration_seconds: 25, label: 'Automated pipeline, calendar filling (40–65s)' },
-  { duration_seconds: 15, label: 'Team closing deals (65–80s)' },
-  { duration_seconds: 10, label: 'Company logo + CTA (80–90s)' },
-]
+// ─── STEP 1: BUILD NARRATION FROM PDF CONTENT ──────────────────────────────
 
-// ─── STEP 1: GENERATE SCRIPT VIA CLAUDE ──────────────────────────────────────
+function buildNarration(company: CompanyWithSignals, content: ReportContent): string {
+  const name = company.name
+  const monthly = content.monthly_loss_dollars.toLocaleString()
+  const annual = content.annual_loss_dollars.toLocaleString()
+  const hours = content.hours_wasted_monthly
+  const demos = content.demos_missed_monthly
 
-async function generateScript(company: CompanyWithSignals): Promise<VideoScript> {
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
-  const monthlyLoss = company.monthly_loss_estimate ?? 1903
-
-  const prompt = `Create a 90-second B2B video script for Sora AI.
-Company: ${company.name} (${company.industry ?? 'B2B SaaS'})
-SDR count: ${company.sdr_count}, Monthly loss: $${monthlyLoss}
-Location: ${company.location ?? 'USA'}
-
-The video must have exactly 5 scenes with these durations and themes:
-1. Scene 1 (15s): SDR at desk doing manual outreach, clock ticking
-2. Scene 2 (25s): Money counter dropping, competitor companies growing
-3. Scene 3 (25s): Same team with automated pipeline, calendar filling with demos
-4. Scene 4 (15s): Team closing deals, celebrating wins
-5. Scene 5 (10s): ${company.name} logo + call to action
-
-Return ONLY this JSON (no other text):
-{
-  "scenes": [
-    {
-      "duration_seconds": 15,
-      "visual": "detailed visual description for Sora AI, max 50 words, photorealistic",
-      "narration": "voiceover text for this scene",
-      "on_screen_text": "text overlay shown on screen"
-    }
-  ]
-}`
-
-  let attempts = 0
-  while (attempts < 3) {
-    attempts++
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1500,
-      system: 'Write a 90-second B2B video script for Sora AI. Output ONLY valid JSON. No markdown. No preamble.',
-      messages: [{ role: 'user', content: prompt }],
-    })
-
-    const text = response.content[0].type === 'text' ? response.content[0].text : ''
-    try {
-      const clean = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim()
-      const parsed = JSON.parse(clean) as VideoScript
-      if (!Array.isArray(parsed.scenes) || parsed.scenes.length !== 5) {
-        throw new Error('Expected exactly 5 scenes')
-      }
-      // Enforce fixed durations per spec
-      parsed.scenes.forEach((scene, i) => {
-        scene.duration_seconds = SCENE_STRUCTURE[i].duration_seconds
-      })
-      return parsed
-    } catch {
-      console.error(`[!] Claude script invalid (attempt ${attempts}), retrying...`)
-    }
-  }
-  throw new Error('Failed to generate video script after 3 attempts')
+  return [
+    `${name}. ${content.headline}.`,
+    `Your team is wasting ${hours} hours every month on manual outreach. That's $${monthly} per month, or $${annual} per year, walking out the door. ${demos} qualified demos missed.`,
+    content.competitor_insight,
+    `${content.cta_text}. Reply YES to book a demo.`,
+  ].join(' ')
 }
 
-// ─── STEP 2A: SORA VIDEO ─────────────────────────────────────────────────────
+// ─── STEP 2: GENERATE TTS VIA SHOTSTACK CREATE API ─────────────────────────
 
-async function generateWithSora(script: VideoScript, slug: string): Promise<string> {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
-
-  const combinedPrompt = script.scenes
-    .map((s, i) => `Scene ${i + 1} (${s.duration_seconds}s): ${s.visual}`)
-    .join('\n')
-
-  console.log('[Sora] Creating video job...')
-  const job = await (openai.videos as unknown as {
-    create: (params: Record<string, unknown>) => Promise<{ id: string; status: string }>
-  }).create({
-    model: 'sora-2',
-    prompt: combinedPrompt,
-  })
-
-  console.log(`[Sora] Job created: ${job.id}, polling...`)
-
-  // Poll up to 5 minutes
-  const deadline = Date.now() + 5 * 60 * 1000
-  while (Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, 10000))
-
-    const status = await (openai.videos as unknown as {
-      retrieve: (id: string) => Promise<{ id: string; status: string; data?: Array<{ url?: string }> }>
-    }).retrieve(job.id)
-
-    console.log(`[Sora] Status: ${status.status}`)
-
-    if (status.status === 'completed' && status.data?.[0]?.url) {
-      const videoUrl = status.data[0].url!
-      return await downloadAndUpload(videoUrl, slug, 'sora')
-    }
-
-    if (status.status === 'failed') {
-      throw new Error('Sora job failed')
-    }
-  }
-
-  throw new Error('Sora timeout (5 minutes)')
-}
-
-// ─── STEP 2B: HEYGEN FALLBACK ─────────────────────────────────────────────────
-
-async function generateWithHeygen(script: VideoScript, slug: string): Promise<string> {
-  const HEYGEN_KEY = process.env.HEYGEN_API_KEY
-  if (!HEYGEN_KEY) throw new Error('HEYGEN_API_KEY not set')
-
-  // Use first scene narration as the script
-  const narration = script.scenes.map((s) => s.narration).join(' ')
-
-  const body = JSON.stringify({
-    video_inputs: [{
-      character: { type: 'avatar', avatar_id: 'josh_lite3_20230714', avatar_style: 'normal' },
-      voice: { type: 'text', input_text: narration, voice_id: 'en-US-JennyNeural' },
-      background: { type: 'color', value: '#0f172a' },
-    }],
-    ratio: '16:9',
-    test: false,
-  })
-
-  const videoId: string = await new Promise((resolve, reject) => {
-    const options = {
-      hostname: 'api.heygen.com',
-      path: '/v2/video/generate',
-      method: 'POST',
-      headers: {
-        'X-Api-Key': HEYGEN_KEY,
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(body),
+async function generateTTS(text: string): Promise<string> {
+  const env = SHOTSTACK_ENV()
+  const res = await fetch(`${SHOTSTACK_BASE()}/create/${env}/assets`, {
+    method: 'POST',
+    headers: { 'x-api-key': SHOTSTACK_KEY(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      provider: 'shotstack',
+      options: {
+        type: 'text-to-speech',
+        text,
+        voice: 'Matthew',
+        language: 'en-US',
+        newscaster: true,
       },
-    }
-    const req = https.request(options, (res) => {
-      let d = ''
-      res.on('data', (c) => (d += c))
-      res.on('end', () => {
-        if (res.statusCode !== 200) return reject(new Error(`Heygen ${res.statusCode}: ${d}`))
-        const parsed = JSON.parse(d)
-        resolve(parsed.data?.video_id ?? parsed.video_id)
-      })
-    })
-    req.on('error', reject)
-    req.write(body)
-    req.end()
+    }),
   })
 
-  console.log(`[Heygen] Job created: ${videoId}, polling...`)
+  if (!res.ok) throw new Error(`Shotstack TTS failed: ${res.status} ${await res.text()}`)
+  const body = await res.json() as { data: { id: string } }
+  const assetId = body.data.id
 
-  // Poll up to 5 minutes
-  const deadline = Date.now() + 5 * 60 * 1000
-  while (Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, 15000))
+  console.log(`[Shotstack] TTS queued: ${assetId}`)
 
-    const videoUrl: string = await new Promise((resolve, reject) => {
-      const options = {
-        hostname: 'api.heygen.com',
-        path: `/v1/video_status.get?video_id=${videoId}`,
-        headers: { 'X-Api-Key': HEYGEN_KEY! },
-      }
-      https.get(options, (res) => {
-        let d = ''
-        res.on('data', (c) => (d += c))
-        res.on('end', () => {
-          const parsed = JSON.parse(d)
-          if (parsed.data?.status === 'completed') resolve(parsed.data.video_url)
-          else if (parsed.data?.status === 'failed') reject(new Error('Heygen job failed'))
-          else resolve('')
-        })
-      }).on('error', reject)
+  // Poll for completion (max 60s)
+  for (let i = 0; i < 20; i++) {
+    await new Promise(r => setTimeout(r, 3000))
+    const poll = await fetch(`${SHOTSTACK_BASE()}/create/${env}/assets/${assetId}`, {
+      headers: { 'x-api-key': SHOTSTACK_KEY() },
     })
+    const pollBody = await poll.json() as { data: { attributes: { status: string; url?: string } } }
+    const status = pollBody.data.attributes.status
 
-    if (videoUrl) {
-      console.log(`[Heygen] Video ready: ${videoUrl}`)
-      return await downloadAndUpload(videoUrl, slug, 'heygen')
+    if (status === 'done' && pollBody.data.attributes.url) {
+      console.log(`[✓] TTS ready: ${pollBody.data.attributes.url}`)
+      return pollBody.data.attributes.url
     }
-
-    console.log(`[Heygen] Still rendering...`)
+    if (status === 'failed') throw new Error('Shotstack TTS rendering failed')
   }
 
-  throw new Error('Heygen timeout (5 minutes)')
+  throw new Error('Shotstack TTS timeout (60s)')
 }
 
-// ─── DOWNLOAD AND UPLOAD TO SUPABASE STORAGE ─────────────────────────────────
+// ─── STEP 3: RENDER VIDEO VIA SHOTSTACK EDIT API ────────────────────────────
 
-async function downloadAndUpload(
-  sourceUrl: string,
-  slug: string,
-  provider: 'sora' | 'heygen'
-): Promise<string> {
-  const tmpFile = path.join(os.tmpdir(), `${slug}-${provider}.mp4`)
+function buildVideoTimeline(
+  company: CompanyWithSignals,
+  content: ReportContent,
+  ttsUrl: string,
+): Record<string, unknown> {
+  const logoUrl = company.logo_url ?? `https://logo.clearbit.com/${company.domain}`
+  const monthly = `$${content.monthly_loss_dollars.toLocaleString()}`
+  const annual = `$${content.annual_loss_dollars.toLocaleString()}`
+  const hours = String(content.hours_wasted_monthly)
+  const demos = String(content.demos_missed_monthly)
 
-  // Download to temp file
-  await new Promise<void>((resolve, reject) => {
-    const file = fs.createWriteStream(tmpFile)
-    https.get(sourceUrl, (res) => {
-      res.pipe(file)
-      file.on('finish', () => { file.close(); resolve() })
-    }).on('error', reject)
+  // Native Shotstack text/image assets — no HTML, proper fonts, real animations
+  // Color: white (#ffffff) + purple (#a855f7) on dark (#0c0118)
+
+  // Shotstack: first track = foreground (top), last track = background (bottom)
+  // We build content tracks first, then push background at the end
+  const tracks: Array<{ clips: unknown[] }> = []
+
+  // ── SCENE 1: COMPANY NAME (0-7s) ──
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: company.name, alignment: { horizontal: 'left', vertical: 'center' },
+        font: { color: '#ffffff', family: 'Montserrat ExtraBold', size: 62, lineHeight: 1 }, width: 800, height: 120 },
+      start: 0.3, length: 6.5, position: 'center', offset: { x: -0.1, y: 0.15 },
+      transition: { in: 'carouselRight', out: 'slideLeft' },
+    }],
   })
 
-  const videoBuffer = fs.readFileSync(tmpFile)
-  fs.unlinkSync(tmpFile)
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: `${company.industry ?? 'B2B SaaS'}  •  ${company.location ?? 'USA'}`,
+        alignment: { horizontal: 'left', vertical: 'center' },
+        font: { color: '#a855f7', family: 'Montserrat SemiBold', size: 22, lineHeight: 1 }, width: 600, height: 40 },
+      start: 0.6, length: 6.2, position: 'center', offset: { x: -0.15, y: 0.06 },
+      transition: { in: 'fade' },
+    }],
+  })
 
-  console.log(`[Storage] Uploading ${(videoBuffer.length / 1024 / 1024).toFixed(1)}MB...`)
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: 'PIPELINE AUTOPSY REPORT', alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#7c3aed', family: 'Montserrat SemiBold', size: 18, lineHeight: 1 }, width: 500, height: 30 },
+      start: 1, length: 5.8, position: 'center', offset: { x: 0, y: -0.12 },
+      transition: { in: 'fade' },
+    }],
+  })
+
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: content.headline, alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#ffffff', family: 'Montserrat SemiBold', size: 32, lineHeight: 1.2 }, width: 700, height: 100 },
+      start: 1.3, length: 5.5, position: 'center', offset: { x: 0, y: -0.25 },
+      transition: { in: 'fade' },
+    }],
+  })
+
+  // Company logo
+  tracks.push({
+    clips: [{
+      asset: { type: 'image', src: logoUrl },
+      start: 0.2, length: 6.6, position: 'center', offset: { x: 0.32, y: 0.15 },
+      scale: 0.12, transition: { in: 'fade' }, effect: 'zoomInSlow',
+    }],
+  })
+
+  // ── SCENE 2: NUMBERS (7-15s) ──
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: 'REVENUE LEAK ANALYSIS', alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#7c3aed', family: 'Montserrat SemiBold', size: 18, lineHeight: 1 }, width: 500, height: 30 },
+      start: 7.2, length: 7.5, position: 'center', offset: { x: 0, y: 0.35 },
+      transition: { in: 'fade' },
+    }],
+  })
+
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: monthly, alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#a855f7', family: 'Montserrat ExtraBold', size: 96, lineHeight: 1 }, width: 600, height: 130 },
+      start: 7.5, length: 7, position: 'center', offset: { x: 0, y: 0.18 },
+      transition: { in: 'zoom' }, effect: 'zoomIn',
+    }],
+  })
+
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: `per month  •  ${annual} per year`, alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#ffffff', family: 'Montserrat SemiBold', size: 22, lineHeight: 1 }, width: 600, height: 40 },
+      start: 8, length: 6.5, position: 'center', offset: { x: 0, y: 0.04 },
+      transition: { in: 'fade' },
+    }],
+  })
+
+  // Stat: Hours
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: hours, alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#ffffff', family: 'Montserrat ExtraBold', size: 56, lineHeight: 1 }, width: 200, height: 80 },
+      start: 8.5, length: 6, position: 'center', offset: { x: -0.25, y: -0.18 },
+      transition: { in: 'carouselUp' },
+    }],
+  })
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: 'HOURS WASTED', alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#a855f7', family: 'Montserrat SemiBold', size: 14, lineHeight: 1 }, width: 200, height: 25 },
+      start: 8.8, length: 5.7, position: 'center', offset: { x: -0.25, y: -0.26 },
+      transition: { in: 'fade' },
+    }],
+  })
+
+  // Stat: Demos
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: demos, alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#ffffff', family: 'Montserrat ExtraBold', size: 56, lineHeight: 1 }, width: 200, height: 80 },
+      start: 9, length: 5.5, position: 'center', offset: { x: 0, y: -0.18 },
+      transition: { in: 'carouselUp' },
+    }],
+  })
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: 'DEMOS MISSED', alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#a855f7', family: 'Montserrat SemiBold', size: 14, lineHeight: 1 }, width: 200, height: 25 },
+      start: 9.3, length: 5.2, position: 'center', offset: { x: 0, y: -0.26 },
+      transition: { in: 'fade' },
+    }],
+  })
+
+  // Stat: SDRs
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: String(company.sdr_count), alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#ffffff', family: 'Montserrat ExtraBold', size: 56, lineHeight: 1 }, width: 200, height: 80 },
+      start: 9.5, length: 5, position: 'center', offset: { x: 0.25, y: -0.18 },
+      transition: { in: 'carouselUp' },
+    }],
+  })
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: 'SDRs AT RISK', alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#a855f7', family: 'Montserrat SemiBold', size: 14, lineHeight: 1 }, width: 200, height: 25 },
+      start: 9.8, length: 4.7, position: 'center', offset: { x: 0.25, y: -0.26 },
+      transition: { in: 'fade' },
+    }],
+  })
+
+  // ── SCENE 3: COMPARISON (15-22s) ──
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: 'INDUSTRY BENCHMARK', alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#7c3aed', family: 'Montserrat SemiBold', size: 18, lineHeight: 1 }, width: 500, height: 30 },
+      start: 15.2, length: 6.5, position: 'center', offset: { x: 0, y: 0.35 },
+      transition: { in: 'fade' },
+    }],
+  })
+
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: content.competitor_insight.slice(0, 80), alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#ffffff', family: 'Montserrat SemiBold', size: 28, lineHeight: 1.3 }, width: 750, height: 100 },
+      start: 15.5, length: 6, position: 'center', offset: { x: 0, y: 0.18 },
+      transition: { in: 'carouselRight', out: 'slideLeft' },
+    }],
+  })
+
+  // Manual bar (small)
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: ' ', font: { color: '#000', size: 1 }, width: 80, height: 30, background: { color: '#ef4444' } },
+      start: 16.2, length: 5.3, position: 'center', offset: { x: -0.15, y: -0.1 },
+      transition: { in: 'slideRight' },
+    }],
+  })
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: 'Manual  1-2%', alignment: { horizontal: 'left', vertical: 'center' },
+        font: { color: '#ffffff', family: 'Montserrat SemiBold', size: 18, lineHeight: 1 }, width: 300, height: 30 },
+      start: 16.5, length: 5, position: 'center', offset: { x: 0.01, y: -0.1 },
+      transition: { in: 'fade' },
+    }],
+  })
+
+  // AI bar (big)
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: ' ', font: { color: '#000', size: 1 }, width: 450, height: 30, background: { color: '#a855f7' } },
+      start: 16.8, length: 4.7, position: 'center', offset: { x: -0.04, y: -0.2 },
+      transition: { in: 'slideRight' },
+    }],
+  })
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: 'AI-Powered  8-16%', alignment: { horizontal: 'left', vertical: 'center' },
+        font: { color: '#ffffff', family: 'Montserrat ExtraBold', size: 20, lineHeight: 1 }, width: 350, height: 30 },
+      start: 17.2, length: 4.3, position: 'center', offset: { x: 0.17, y: -0.2 },
+      transition: { in: 'fade' },
+    }],
+  })
+
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: '8x higher reply rates with AI personalization', alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#a855f7', family: 'Montserrat SemiBold', size: 20, lineHeight: 1 }, width: 600, height: 35 },
+      start: 17.5, length: 4, position: 'center', offset: { x: 0, y: -0.32 },
+      transition: { in: 'fade' },
+    }],
+  })
+
+  // ── SCENE 4: CTA (22-28s) ──
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: 'NEXT STEP', alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#7c3aed', family: 'Montserrat SemiBold', size: 18, lineHeight: 1 }, width: 300, height: 30 },
+      start: 22.2, length: 5.5, position: 'center', offset: { x: 0, y: 0.3 },
+      transition: { in: 'fade' },
+    }],
+  })
+
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: 'Reply YES', alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#ffffff', family: 'Montserrat ExtraBold', size: 72, lineHeight: 1 }, width: 600, height: 100 },
+      start: 22.5, length: 5, position: 'center', offset: { x: 0, y: 0.14 },
+      transition: { in: 'zoom' }, effect: 'zoomIn',
+    }],
+  })
+
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: 'See exactly how we calculated these numbers', alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#ffffff', family: 'Montserrat SemiBold', size: 24, lineHeight: 1 }, width: 650, height: 40 },
+      start: 23, length: 4.5, position: 'center', offset: { x: 0, y: 0 },
+      transition: { in: 'fade' },
+    }],
+  })
+
+  // CTA button background
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: '  Book a Demo  ', alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#ffffff', family: 'Montserrat ExtraBold', size: 24, lineHeight: 1 }, width: 360, height: 55,
+        background: { color: '#7c3aed' } },
+      start: 23.5, length: 4, position: 'center', offset: { x: 0, y: -0.12 },
+      transition: { in: 'fade' },
+    }],
+  })
+
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: 'Powered by Salesforge  •  Agent Frank', alignment: { horizontal: 'center', vertical: 'center' },
+        font: { color: '#7c3aed', family: 'Montserrat SemiBold', size: 16, lineHeight: 1 }, width: 500, height: 30 },
+      start: 24, length: 3.5, position: 'center', offset: { x: 0, y: -0.25 },
+      transition: { in: 'fade' },
+    }],
+  })
+
+  // ── BACKGROUND LAYERS (bottom of stack — rendered behind everything) ──
+  tracks.push({
+    clips: [{
+      asset: { type: 'video', src: 'https://templates.shotstack.io/holiday-season-glam-template/lgeb9vwl1d8wtpnhn5wblgke/source_b749f9da.webm', volume: 0 },
+      start: 0, length: 28, fit: 'contain', opacity: 0.35,
+    }],
+  })
+  tracks.push({
+    clips: [{
+      asset: { type: 'video', src: 'https://templates.shotstack.io/holiday-season-glam-template/lgeb9vwl1d8wtpnhn5wblgke/source_a30d9fc6.webm', volume: 0 },
+      start: 0, length: 28, fit: 'contain', opacity: 0.2,
+    }],
+  })
+  tracks.push({
+    clips: [{
+      asset: { type: 'text', text: ' ', font: { color: '#000', size: 1 }, width: 1920, height: 1080, background: { color: '#0c0118' } },
+      start: 0, length: 28, position: 'center',
+    }],
+  })
+
+  return {
+    timeline: {
+      background: '#0c0118',
+      soundtrack: { src: ttsUrl, effect: 'fadeOut' },
+      tracks,
+    },
+    output: {
+      format: 'mp4',
+      resolution: 'hd',
+      aspectRatio: '16:9',
+      fps: 30,
+    },
+  }
+}
+
+async function renderVideo(timeline: Record<string, unknown>): Promise<string> {
+  const env = SHOTSTACK_ENV()
+  const res = await fetch(`${SHOTSTACK_BASE()}/edit/${env}/render`, {
+    method: 'POST',
+    headers: { 'x-api-key': SHOTSTACK_KEY(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(timeline),
+  })
+
+  if (!res.ok) throw new Error(`Shotstack render failed: ${res.status} ${await res.text()}`)
+  const body = await res.json() as { response: { id: string } }
+  const renderId = body.response.id
+
+  console.log(`[Shotstack] Render queued: ${renderId}`)
+
+  // Poll for completion (max 120s)
+  for (let i = 0; i < 24; i++) {
+    await new Promise(r => setTimeout(r, 5000))
+    const poll = await fetch(`${SHOTSTACK_BASE()}/edit/${env}/render/${renderId}`, {
+      headers: { 'x-api-key': SHOTSTACK_KEY() },
+    })
+    const pollBody = await poll.json() as { response: { status: string; url?: string; error?: string } }
+    const status = pollBody.response.status
+
+    console.log(`[Shotstack] Render: ${status}`)
+
+    if (status === 'done' && pollBody.response.url) {
+      return pollBody.response.url
+    }
+    if (status === 'failed') {
+      throw new Error(`Shotstack render failed: ${pollBody.response.error ?? 'unknown'}`)
+    }
+  }
+
+  throw new Error('Shotstack render timeout (120s)')
+}
+
+// ─── STEP 4: UPLOAD TO SUPABASE STORAGE ─────────────────────────────────────
+
+async function uploadToSupabase(videoUrl: string, slug: string): Promise<string> {
+  // Download from Shotstack
+  const res = await fetch(videoUrl)
+  if (!res.ok) throw new Error(`Failed to download video: ${res.status}`)
+  const buffer = Buffer.from(await res.arrayBuffer())
+
+  console.log(`[Storage] Uploading ${(buffer.length / 1024 / 1024).toFixed(1)}MB...`)
 
   const supabase = getSupabase()
   const fileName = `${slug}.mp4`
 
   const { error } = await supabase.storage
     .from('videos')
-    .upload(fileName, videoBuffer, { contentType: 'video/mp4', upsert: true })
+    .upload(fileName, buffer, { contentType: 'video/mp4', upsert: true })
 
   if (error) throw new Error(`Storage upload failed: ${error.message}`)
 
@@ -284,10 +469,10 @@ export async function generateVideo(companyId: string): Promise<GenerateResult> 
 
   if (!company) throw new Error('company_not_found')
 
-  // ── Fetch report ───────────────────────────────────────────────────────────
+  // ── Fetch report (must have PDF content) ─────────────────────────────────
   const { data: report } = await supabase
     .from('reports')
-    .select('id, video_url, video_provider')
+    .select('*')
     .eq('company_id', companyId)
     .single()
 
@@ -295,35 +480,58 @@ export async function generateVideo(companyId: string): Promise<GenerateResult> 
 
   const slug = company.domain.replace(/\./g, '-')
 
-  // ── Step 1: Generate script via Claude ────────────────────────────────────
-  console.log(`[1/3] Claude API: generating video script for ${company.name}...`)
-  const script = await generateScript(company)
+  // ── Parse PDF content from report ────────────────────────────────────────
+  // The PDF generator stores Claude's JSON content — we reuse it for video
+  let pdfContent: ReportContent
+
+  if (report.video_script && typeof report.video_script === 'object') {
+    // If video_script already has our content, use it
+    pdfContent = report.video_script as unknown as ReportContent
+  } else {
+    // Build from company data (same formula as PDF generator)
+    const monthlyLoss = company.monthly_loss_estimate ?? 1903
+    pdfContent = {
+      headline: `is losing $${monthlyLoss.toLocaleString()} every month on manual outreach`,
+      diagnosis: `With ${company.sdr_count} SDRs spending 3 hours daily on manual prospecting, pipeline capacity is capped.`,
+      monthly_loss_dollars: monthlyLoss,
+      annual_loss_dollars: monthlyLoss * 12,
+      hours_wasted_monthly: company.sdr_count * 3 * 22,
+      demos_missed_monthly: Math.round((company.sdr_count * 3 * 22) / 2.5),
+      competitor_insight: `Companies in ${company.industry ?? 'your space'} are switching to AI-powered SDR outreach with 8 to 16 percent reply rates.`,
+      solution_preview: `Automated pipeline for ${company.name} could recover ${company.sdr_count * 3} hours daily.`,
+      cta_text: `See exactly how we calculated these numbers for ${company.name}`,
+    }
+  }
+
+  console.log(`[1/3] Building narration from PDF content for ${company.name}...`)
+  const narration = buildNarration(company, pdfContent)
   const t1 = ((Date.now() - startTime) / 1000).toFixed(1)
-  console.log(`[✓] Script: ${script.scenes.length} scenes (${t1}s)`)
+  console.log(`[✓] Narration: ${narration.length} chars (${t1}s)`)
 
-  // Save script to report
-  await supabase.from('reports').update({ video_script: script }).eq('id', report.id)
-
-  // ── Step 2: Try Sora → Heygen → skipped ───────────────────────────────────
+  // ── Generate video via Shotstack ──────────────────────────────────────────
   let videoUrl: string | null = null
-  let provider: 'sora' | 'heygen' | 'skipped' = 'skipped'
+  let provider: 'shotstack' | 'skipped' = 'skipped'
 
-  console.log(`[2/3] Sora: generating video...`)
-  try {
-    videoUrl = await generateWithSora(script, slug)
-    provider = 'sora'
-    console.log(`[✓] Sora video ready: ${videoUrl}`)
-  } catch (soraErr) {
-    console.log(`[!] Sora failed: ${soraErr instanceof Error ? soraErr.message : soraErr}`)
-    console.log(`[2/3] Heygen: trying fallback...`)
-
+  if (!SHOTSTACK_KEY()) {
+    console.log('[!] SHOTSTACK_API_KEY not set — skipping video generation')
+  } else {
     try {
-      videoUrl = await generateWithHeygen(script, slug)
-      provider = 'heygen'
-      console.log(`[✓] Heygen video ready: ${videoUrl}`)
-    } catch (heygenErr) {
-      console.log(`[!] Heygen failed: ${heygenErr instanceof Error ? heygenErr.message : heygenErr}`)
-      console.log(`[→] video_provider=skipped, pipeline continues without video`)
+      // Step 2: TTS
+      console.log(`[2/3] Shotstack TTS: generating voiceover...`)
+      const ttsUrl = await generateTTS(narration)
+
+      // Step 3: Render video with HTML scenes + TTS soundtrack
+      console.log(`[3/3] Shotstack Edit: rendering video...`)
+      const timeline = buildVideoTimeline(company, pdfContent, ttsUrl)
+      const shotstackUrl = await renderVideo(timeline)
+
+      // Step 4: Upload to Supabase Storage
+      videoUrl = await uploadToSupabase(shotstackUrl, slug)
+      provider = 'shotstack'
+      console.log(`[✓] Video uploaded: ${videoUrl}`)
+    } catch (err) {
+      console.error(`[!] Shotstack failed: ${err instanceof Error ? err.message : String(err)}`)
+      console.log('[→] video_provider=skipped, pipeline continues without video')
       provider = 'skipped'
       videoUrl = null
     }
@@ -331,14 +539,15 @@ export async function generateVideo(companyId: string): Promise<GenerateResult> 
 
   const t2 = ((Date.now() - startTime) / 1000).toFixed(1)
 
-  // ── Step 3: Update report ──────────────────────────────────────────────────
+  // ── Update report ──────────────────────────────────────────────────────────
   await supabase.from('reports').update({
     video_url: videoUrl,
     video_provider: provider,
+    video_script: pdfContent,
     ...(videoUrl ? { status: 'ready' } : {}),
   }).eq('id', report.id)
 
-  // ── Update Salesforge custom_vars with video_url ────────────────────────
+  // ── Update Salesforge custom_vars with video_url ──────────────────────────
   if (videoUrl && company.salesforce_contact_id && company.decision_maker?.email) {
     try {
       const dm = company.decision_maker
@@ -357,14 +566,13 @@ export async function generateVideo(companyId: string): Promise<GenerateResult> 
     }
   }
 
-  // Update companies.status → content_generated (if pdf was also done)
+  // Update companies.status → content_generated
   await supabase.from('companies')
     .update({ status: 'content_generated' })
     .eq('id', companyId)
     .in('status', ['profiled', 'responded', 'outreach_sent', 'page_opened'])
 
-  const t3 = ((Date.now() - startTime) / 1000).toFixed(1)
-  console.log(`[✓] Done in ${t3}s — provider: ${provider}`)
+  console.log(`[✓] Done in ${t2}s — provider: ${provider}`)
 
   return {
     report_id: report.id,

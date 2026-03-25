@@ -753,12 +753,12 @@ export function buildReportHTML(company: Company, content: ReportContent): strin
     <div class="cta-headline">${content.cta_text}</div>
     <div class="cta-text">
       We'll walk you through exactly how we calculated ${company.name}'s ${formatMoney(content.monthly_loss_dollars)}/month leak
-      — and show you a live demo of the automated pipeline in 8 minutes.
+      — and show you a live demo of the automated pipeline.
     </div>
 
     <div class="reply-box">
       Reply <strong>YES</strong> — we'll show you how we<br>
-      calculated this in 8 minutes
+      calculated this — book a demo
     </div>
 
     <div class="page-link">

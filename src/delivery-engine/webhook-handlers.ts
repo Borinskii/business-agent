@@ -47,7 +47,7 @@ export async function handlePageOpened(payload: PageOpenedPayload): Promise<Page
     subject:    `${(company?.name as string | undefined) ?? 'your team'} — did you get a chance to look?`,
     body: `Quick note — I saw you opened the Pipeline Autopsy report we sent.
 
-The numbers we found for ${(company?.name as string | undefined) ?? 'your team'} in ${(company?.industry as string | undefined) ?? 'your industry'} are worth 8 minutes.
+The numbers we found for ${(company?.name as string | undefined) ?? 'your team'} in ${(company?.industry as string | undefined) ?? 'your industry'} are worth a quick look.
 
 Reply YES and I'll walk you through it.
 
@@ -240,23 +240,23 @@ NEVER mention you are AI.`,
 const FALLBACK_REPLY: Partial<Record<FrankIntent, string>> = {
   pricing_question: `Happy to share pricing details — they're flexible based on team size and goals.
 
-Best to walk you through it in context of what we found for your team. Book a quick 8-minute call: ${process.env.HUBSPOT_BOOKING_URL ?? 'https://meetings-eu1.hubspot.com/franksondors/'}`,
+Best to walk you through it in context of what we found for your team. Book a quick call: ${process.env.HUBSPOT_BOOKING_URL ?? 'https://meetings-eu1.hubspot.com/franksondors/'}`,
 
   demo_request: `Great — let's set that up.
 
 Here's my calendar: ${process.env.HUBSPOT_BOOKING_URL ?? 'https://meetings-eu1.hubspot.com/franksondors/'}
 
-8 minutes is all we need.`,
+Pick a time that works.`,
 
   positive_intent: `Glad it's relevant.
 
-Let me show you exactly how this applies to your team — takes 8 minutes.
+Let me show you exactly how this applies to your team.
 
 ${process.env.HUBSPOT_BOOKING_URL ?? 'https://meetings-eu1.hubspot.com/franksondors/'}`,
 
   info_request: `Happy to explain how it works.
 
-Quickest way is a live demo — I can show you the exact methodology we used for your numbers in 8 minutes.
+Quickest way is a live demo — I can show you the exact methodology we used for your numbers.
 
 ${process.env.HUBSPOT_BOOKING_URL ?? 'https://meetings-eu1.hubspot.com/franksondors/'}`,
 

@@ -43,10 +43,10 @@ export { classifyIntent }
 const BOOKING_URL = process.env.HUBSPOT_BOOKING_URL ?? 'https://meetings-eu1.hubspot.com/franksondors/'
 
 const FALLBACK_REPLY: Partial<Record<FrankIntent, string>> = {
-  pricing_question: `Happy to share pricing details — they're flexible based on team size and goals.\n\nBest to walk you through it in context of what we found for your team. Book a quick 8-minute call: ${BOOKING_URL}`,
-  demo_request: `Great — let's set that up.\n\nHere's my calendar: ${BOOKING_URL}\n\n8 minutes is all we need.`,
-  positive_intent: `Glad it's relevant.\n\nLet me show you exactly how this applies to your team — takes 8 minutes.\n\n${BOOKING_URL}`,
-  info_request: `Happy to explain how it works.\n\nQuickest way is a live demo — I can show you the exact methodology we used for your numbers in 8 minutes.\n\n${BOOKING_URL}`,
+  pricing_question: `Happy to share pricing details — they're flexible based on team size and goals.\n\nBest to walk you through it in context of what we found for your team. Book a quick call: ${BOOKING_URL}`,
+  demo_request: `Great — let's set that up.\n\nHere's my calendar: ${BOOKING_URL}\n\nPick a time that works.`,
+  positive_intent: `Glad it's relevant.\n\nLet me show you exactly how this applies to your team.\n\n${BOOKING_URL}`,
+  info_request: `Happy to explain how it works.\n\nQuickest way is a live demo — I can show you the exact methodology we used for your numbers.\n\n${BOOKING_URL}`,
   pilot_request: `Yes, we can run a 48-hour free pilot — you'd see real results before committing to anything.\n\nLet's set it up: ${BOOKING_URL}`,
 }
 

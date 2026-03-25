@@ -26,7 +26,7 @@ I noticed ${company.name} has been actively growing — and ran some numbers.
 Short version: your team is leaving ~$${formatK(company.monthly_loss_estimate ?? 1903)}/month
 on the table. Full breakdown is in the report.
 
-Reply YES and I'll show you how we calculated this in 8 minutes.
+Reply YES and I'll show you how we calculated this.
 
 {{personal_page_url}}`
 }
@@ -391,7 +391,7 @@ export async function handlePageOpened(companyId: string): Promise<void> {
     subject: `${name} — did you get a chance to look?`,
     body: `Quick note — I saw you opened the Pipeline Autopsy report we sent.
 
-The numbers we found for ${name} in ${industry} are worth 8 minutes.
+The numbers we found for ${name} in ${industry} are worth a quick look.
 
 Reply YES and I'll walk you through it.
 

@@ -409,7 +409,7 @@ ${results.live_conversations.length > 0
 
 These are real results from real prospects matching your ICP.
 
-Let's walk through them together — 8 minutes is all we need.
+Let's walk through them together — book a demo below.
 
 ${bookingUrl}`
 
