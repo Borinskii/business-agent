@@ -168,84 +168,104 @@ export async function createSequenceCore(
   })
   log(`[✓] Sequence created: ${sequence.id}`)
 
-  // ── Step 4: Get mailbox (sender) ──────────────────────────────────────────
-  interface SFMailboxList { data: SFMailbox[] }
-  let mailbox: SFMailbox | undefined
-  try {
-    const mailboxes = await sf.get<SFMailboxList>(`/workspaces/${workspace.id}/mailboxes`)
-    mailbox = mailboxes.data?.find(m => m.active) ?? mailboxes.data?.[0]
-    if (mailbox) log(`[✓] Mailbox: ${mailbox.id}`)
-    else log('[~] No mailbox in workspace — nodes will skip mailboxId')
-  } catch {
-    log('[~] Mailboxes endpoint unavailable — skipping')
+  const firstName = company.decision_maker?.name.split(' ')[0] ?? 'there'
+
+  // ── Step 4: Add sequence steps via Standard engine ──────────────────────
+  //    PUT /workspaces/{id}/sequences/{id}/steps
+  //    Schema: UpdateSequenceStepsRequest { steps: UpsertStepRequest[] }
+  log('[delivery-engine] Adding sequence steps...')
+
+  interface SFStepsResponse {
+    steps: Array<{ id: string; name: string }>
   }
 
-  const firstName  = company.decision_maker?.name.split(' ')[0] ?? 'there'
-  const senderPart = mailbox ? { mailboxId: mailbox.id } : {}
-  let nodesCreated = 0
-
-  // ── Step 5: Build sequence nodes (graceful — skip if API returns 404) ───
-  const nodeBasePath = `/multichannel/workspaces/${workspace.id}/sequences/${sequence.id}/nodes/actions`
-
-  const nodes = [
-    { label: 'Email Day 1', body: { type: 'email', day: 1, subject: `${firstName}, I made something about ${company.name}`, body: EMAIL_TEMPLATE_DAY1(company, report), ...senderPart } },
-    { label: 'LinkedIn Day 3', body: { type: 'linkedin_message', day: 3, body: LINKEDIN_TEMPLATE(company) } },
-    { label: 'FOMO Email Day 5', body: { type: 'email', day: 5, subject: `${company.name} — quick update`, body: EMAIL_TEMPLATE_FOMO(company), ...senderPart } },
-  ]
-
-  for (const node of nodes) {
-    try {
-      await sf.post<SFNode>(nodeBasePath, node.body)
-      log(`[✓] Node: ${node.label}`)
-      nodesCreated++
-    } catch {
-      // Try fallback path without multichannel prefix
-      try {
-        await sf.post<SFNode>(`/workspaces/${workspace.id}/sequences/${sequence.id}/steps`, node.body)
-        log(`[✓] Node: ${node.label}`)
-        nodesCreated++
-      } catch {
-        log(`[~] Node ${node.label} — endpoint unavailable, skipping`)
-      }
+  const stepsResult = await sf.put<SFStepsResponse>(
+    `/workspaces/${workspace.id}/sequences/${sequence.id}/steps`,
+    {
+      steps: [
+        {
+          name:     'Email Day 1',
+          order:    0,
+          waitDays: 0,
+          distributionStrategy: 'equal',
+          variants: [{
+            label:              'Main',
+            order:              0,
+            emailSubject:       `${firstName}, I made something about ${company.name}`,
+            emailContent:       EMAIL_TEMPLATE_DAY1(company, report),
+            status:             'active',
+            distributionWeight: 100,
+          }],
+        },
+        {
+          name:     'Follow-up Day 3',
+          order:    1,
+          waitDays: 2,
+          distributionStrategy: 'equal',
+          variants: [{
+            label:              'Main',
+            order:              0,
+            emailSubject:       `Re: ${firstName}, I made something about ${company.name}`,
+            emailContent:       LINKEDIN_TEMPLATE(company),
+            status:             'active',
+            distributionWeight: 100,
+          }],
+        },
+        {
+          name:     'FOMO Day 5',
+          order:    2,
+          waitDays: 2,
+          distributionStrategy: 'equal',
+          variants: [{
+            label:              'Main',
+            order:              0,
+            emailSubject:       `${company.name} — quick update`,
+            emailContent:       EMAIL_TEMPLATE_FOMO(company),
+            status:             'active',
+            distributionWeight: 100,
+          }],
+        },
+      ],
     }
-  }
-  log(`[✓] Nodes built: ${nodesCreated}/${nodes.length}`)
+  )
+  const stepsCount = stepsResult.steps?.length ?? 0
+  log(`[✓] Steps added: ${stepsCount} (${stepsResult.steps?.map(s => s.name).join(' | ')})`)
 
-  // ── Step 6: Enroll contact ────────────────────────────────────────────────
-  const contactEmail = company.decision_maker?.email ?? ''
+  // ── Step 5: Create contact + enroll ─────────────────────────────────────
+  //    POST /workspaces/{id}/contacts — CreateSimpleLeadRequest
+  const dm = company.decision_maker
+  const contactEmail = dm?.email ?? ''
+
   if (contactEmail) {
-    try {
-      // Try multichannel enrollment with filters
-      await sf.post(`/multichannel/workspaces/${workspace.id}/sequences/${sequence.id}/enrollments`, {
-        filters: { hasEmail: true },
-      })
-      log(`[✓] Contact enrolled via multichannel`)
-    } catch {
-      // Fallback: try legacy leads endpoint
-      try {
-        const enrollment = await sf.post<SFEnroll>(
-          `/workspaces/${workspace.id}/sequences/${sequence.id}/leads`,
-          { email: contactEmail }
-        )
-        log(`[✓] Contact enrolled: ${enrollment.id}`)
-      } catch {
-        log(`[~] Enrollment endpoint unavailable — skipping (contact: ${contactEmail})`)
-      }
-    }
+    log(`[delivery-engine] Creating contact: ${contactEmail}`)
+    interface SFContact { id: string }
+    const contact = await sf.post<SFContact>(`/workspaces/${workspace.id}/contacts`, {
+      firstName:  dm?.name.split(' ')[0] ?? '',
+      lastName:   dm?.name.split(' ').slice(1).join(' ') ?? '',
+      email:      contactEmail,
+      company:    company.name,
+      position:   dm?.title ?? '',
+      linkedinUrl: dm?.linkedin_url ?? '',
+      customVars: {
+        pdf_url:           report.pdf_url ?? '',
+        video_url:         report.video_url ?? '',
+        personal_page_url: report.personal_page_url ?? '',
+      },
+    })
+    log(`[✓] Contact created: ${contact.id}`)
   }
 
-  // ── Step 7: Register reply webhook ────────────────────────────────────────
+  // ── Step 6: Register reply webhook ──────────────────────────────────────
+  //    POST /workspaces/{id}/integrations/webhooks — CreateWebhookRequest
   const appUrl = process.env.APP_URL ?? 'https://phantom-pipeline.com'
-  try {
-    await sf.post(`/workspaces/${workspace.id}/integrations/webhooks`, {
-      name: `phantom_reply_${company.domain}`,
-      type: 'reply',
-      url:  `${appUrl}/api/webhooks/reply`,
-    })
-    log('[✓] Reply webhook registered')
-  } catch {
-    log('[~] Webhook registration unavailable — skipping')
-  }
+
+  interface SFWebhook { id: string }
+  const webhook = await sf.post<SFWebhook>(`/workspaces/${workspace.id}/integrations/webhooks`, {
+    name: `phantom_reply_${company.domain}`,
+    type: 'email_replied',
+    url:  `${appUrl}/api/webhooks/reply`,
+  })
+  log(`[✓] Reply webhook registered: ${webhook.id}`)
 
   if (opts.skipSupabaseSave) {
     return {
@@ -264,7 +284,7 @@ export async function createSequenceCore(
       salesforge_sequence_id: sequence.id,
       type:                   'outreach',
       status:                 'active',
-      nodes_count:            4,
+      nodes_count:            stepsCount,
     })
     .select('id')
     .single()
