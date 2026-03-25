@@ -31,11 +31,11 @@ function LandingPage() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
             {[
-              { name: "Vladyslav N.", role: "Lead Dev", href: "https://www.linkedin.com/in/vladyslav-nidzelskyi-38217a3b9/", initials: "VN" },
-              { name: "Boris A.", role: "Frontend", href: "https://www.linkedin.com/in/boris-arutinov-16471233a", initials: "BA" },
-              { name: "Oleksii B.", role: "Backend", href: "https://www.linkedin.com/in/oleksii-burianov-096648397/", initials: "OB" },
-              { name: "Kirill P.", role: "Execution", href: "https://www.linkedin.com/in/kirill-pochinchik-6ba461330/", initials: "KP" },
-              { name: "Ivan K.", role: "Data Layer", href: "https://www.linkedin.com/in/ivan-kliuss", initials: "IK" },
+              { name: "Vladyslav N.", href: "https://www.linkedin.com/in/vladyslav-nidzelskyi-38217a3b9/", initials: "VN" },
+              { name: "Boris A.", href: "https://www.linkedin.com/in/boris-arutinov-16471233a", initials: "BA" },
+              { name: "Oleksii B.", href: "https://www.linkedin.com/in/oleksii-burianov-096648397/", initials: "OB" },
+              { name: "Kirill P.", href: "https://www.linkedin.com/in/kirill-pochinchik-6ba461330/", initials: "KP" },
+              { name: "Ivan K.", href: "https://www.linkedin.com/in/ivan-kliuss", initials: "IK" },
             ].map((member) => (
               <a
                 key={member.name}
@@ -47,10 +47,7 @@ function LandingPage() {
                 <div className="w-14 h-14 rounded-full bg-[#783FDD]/20 border border-[#783FDD]/30 group-hover:border-[#783FDD]/60 transition-all flex items-center justify-center">
                   <span className="text-[#783FDD] font-bold text-sm group-hover:text-white transition-colors">{member.initials}</span>
                 </div>
-                <div className="text-center">
-                  <div className="text-white/80 text-xs font-semibold group-hover:text-white transition-colors">{member.name}</div>
-                  <div className="text-white/30 text-[10px] mt-0.5">{member.role}</div>
-                </div>
+                <div className="text-white/80 text-xs font-semibold group-hover:text-white transition-colors text-center">{member.name}</div>
               </a>
             ))}
           </div>
