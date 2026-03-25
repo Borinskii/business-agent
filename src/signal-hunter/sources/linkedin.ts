@@ -34,10 +34,10 @@ export async function scanLinkedIn(limit: number): Promise<RawSignal[]> {
     byDomain.set(domain, [...existing, lead])
   }
 
-  // Filter: 2+ SDRs at the same company = they're scaling SDR headcount
+  // Filter: 1+ SDRs at the same company (lowered threshold for pipeline testing)
   const signals: RawSignal[] = []
   for (const [domain, leads] of byDomain) {
-    if (leads.length < 2) continue
+    if (leads.length < 1) continue
     const first = leads[0]
     const companyName = first.company?.name ?? domain
     signals.push({
