@@ -33,6 +33,7 @@ build/
 .parcel-cache/
 .vite/
 .next/
+out/
 .serverless/
 .fusebox/
 .dynamodb/
@@ -56,6 +57,7 @@ htmlcov/
 # Environment Variables
 .env
 .env.local
+.env.*.local
 .env.development.local
 .env.test.local
 .env.production.local
@@ -68,6 +70,15 @@ htmlcov/
 /playwright/.cache/
 /playwright/.auth/
 openapi.json
+
+# Supabase
+.supabase/
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+coverage/
 
 # Project Specific
 frontend/node_modules/
