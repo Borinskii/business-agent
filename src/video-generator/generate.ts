@@ -339,10 +339,17 @@ export async function generateVideo(companyId: string): Promise<GenerateResult> 
   }).eq('id', report.id)
 
   // ── Update Salesforge custom_vars with video_url ────────────────────────
-  if (videoUrl && company.salesforce_contact_id) {
+  if (videoUrl && company.salesforce_contact_id && company.decision_maker?.email) {
     try {
-      await sf.ws.put(`/contacts/${company.salesforce_contact_id}`, {
-        customVars: { video_url: videoUrl },
+      const dm = company.decision_maker
+      await sf.ws.post('/contacts/bulk', {
+        contacts: [{
+          email:     dm.email,
+          firstName: dm.name.split(' ')[0] || '',
+          lastName:  dm.name.split(' ').slice(1).join(' ') || '',
+          tags:      ['phantom-pipeline'],
+          customVars: { video_url: videoUrl },
+        }],
       })
       console.log(`[✓] Salesforge custom_vars updated: video_url`)
     } catch (err) {

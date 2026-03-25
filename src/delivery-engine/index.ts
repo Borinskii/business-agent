@@ -126,7 +126,7 @@ export async function createSequenceCore(
     log('[delivery-engine] DRY RUN — no API calls will be made')
     log(`[✓] Workspace created: wks_dryrun_${company.domain}`)
     log(`[✓] Sequence created: seq_dryrun_${company.domain}`)
-    log('[✓] Nodes built: Email Day1 | LinkedIn Day3 | Condition no_reply_48h | FOMO Day5')
+    log('[✓] Nodes built: Email Day1 | LinkedIn Day3 | FOMO Day5 (no reply 48h)')
     log(`[✓] Contact enrolled: ${company.salesforce_contact_id}`)
     log('[✓] Reply webhook registered')
     if (!opts.skipSupabaseSave) {
@@ -212,20 +212,9 @@ export async function createSequenceCore(
           }],
         },
         {
-          name:     'Condition: No Reply 48h',
+          name:     'FOMO Day 5 (no reply 48h)',
           order:    2,
-          waitDays: 2,
-          distributionStrategy: 'equal',
-          filter: {
-            type: 'no_reply',
-            afterHours: 48,
-          },
-          variants: [],
-        },
-        {
-          name:     'FOMO Day 5',
-          order:    3,
-          waitDays: 0,
+          waitDays: 2,  // 2 days after Day 3 = Day 5 = ~48h no-reply window
           distributionStrategy: 'equal',
           variants: [{
             label:              'Main',
@@ -250,19 +239,30 @@ export async function createSequenceCore(
   if (contactEmail) {
     log(`[delivery-engine] Creating contact: ${contactEmail}`)
     interface SFContact { id: string }
-    const contact = await sf.post<SFContact>(`/workspaces/${workspace.id}/contacts`, {
+
+    // Build contact payload — Salesforge rejects empty linkedinUrl and empty customVars values
+    const contactPayload: Record<string, unknown> = {
       firstName:  dm?.name.split(' ')[0] ?? '',
       lastName:   dm?.name.split(' ').slice(1).join(' ') ?? '',
       email:      contactEmail,
       company:    company.name,
       position:   dm?.title ?? '',
-      linkedinUrl: dm?.linkedin_url ?? '',
-      customVars: {
-        pdf_url:           report.pdf_url ?? '',
-        video_url:         report.video_url ?? '',
-        personal_page_url: report.personal_page_url ?? '',
-      },
-    })
+    }
+
+    if (dm?.linkedin_url) {
+      contactPayload.linkedinUrl = dm.linkedin_url
+    }
+
+    // Only include non-empty custom_vars (Salesforge rejects empty strings)
+    const customVars: Record<string, string> = {}
+    if (report.pdf_url)           customVars.pdf_url = report.pdf_url
+    if (report.video_url)         customVars.video_url = report.video_url
+    if (report.personal_page_url) customVars.personal_page_url = report.personal_page_url
+    if (Object.keys(customVars).length > 0) {
+      contactPayload.customVars = customVars
+    }
+
+    const contact = await sf.post<SFContact>(`/workspaces/${workspace.id}/contacts`, contactPayload)
     log(`[✓] Contact created: ${contact.id}`)
   }
 

@@ -222,10 +222,17 @@ export async function generatePDF(companyId: string): Promise<GenerateResult> {
     }).eq('id', reportId)
 
     // ── Update Salesforge custom_vars with pdf_url ────────────────────────────
-    if (company.salesforce_contact_id) {
+    if (company.salesforce_contact_id && company.decision_maker?.email) {
       try {
-        await sf.ws.put(`/contacts/${company.salesforce_contact_id}`, {
-          customVars: { pdf_url: pdfUrl },
+        const dm = company.decision_maker
+        await sf.ws.post('/contacts/bulk', {
+          contacts: [{
+            email:     dm.email,
+            firstName: dm.name.split(' ')[0] || '',
+            lastName:  dm.name.split(' ').slice(1).join(' ') || '',
+            tags:      ['phantom-pipeline'],
+            customVars: { pdf_url: pdfUrl },
+          }],
         })
         console.log(`[✓] Salesforge custom_vars updated: pdf_url`)
       } catch (err) {
