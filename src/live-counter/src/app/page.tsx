@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Play, Terminal as TerminalIcon, Cpu, Zap, FileText, Video, CheckCircle } from "lucide-react";
+import { CompanyModal, CompanyData } from "../components/CompanyModal";
 
 // Mock event timeline that will simulate the pipeline and populate the table below
 const DEMO_TIMELINE = [
@@ -32,7 +33,8 @@ const DEMO_TIMELINE = [
 export default function Dashboard() {
   const [isRunning, setIsRunning] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
-  const [companies, setCompanies] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<CompanyData[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<CompanyData | null>(null);
   const terminalContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,7 +61,8 @@ export default function Dashboard() {
           setCompanies(prev => [...prev, event.company]);
         } else if (event.action === "UPDATE_COMPANY") {
           setCompanies(prev => prev.map(c => 
-            c.id === event.id ? { ...c, ...event.changes } : c
+            // @ts-ignore
+            c.id === event.id ? { ...c, ...event.changes } as CompanyData : c
           ));
         }
 
@@ -225,9 +228,13 @@ export default function Dashboard() {
                   </tr>
                 )}
                 {companies.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                  <tr 
+                    key={c.id} 
+                    onClick={() => setSelectedCompany(c)}
+                    className="hover:bg-purple-50 transition-colors cursor-pointer group"
+                  >
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-slate-900">{c.name}</div>
+                      <div className="font-semibold text-slate-900 group-hover:text-purple-700 transition-colors">{c.name}</div>
                       <div className="text-xs text-slate-500">{c.id}.com</div>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-700 font-medium">
@@ -258,6 +265,12 @@ export default function Dashboard() {
           </div>
         </div>
       </section>
+
+      <CompanyModal 
+        isOpen={!!selectedCompany} 
+        onClose={() => setSelectedCompany(null)} 
+        company={selectedCompany} 
+      />
     </div>
   );
 }
