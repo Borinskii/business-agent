@@ -156,7 +156,7 @@ export default function Hero() {
           <GlobeInteractive
             size={globeSize}
             speed={0.003}
-            initialPhi={1.1}   // ~63° — puts Americas front-and-center
+            initialPhi={-0.42}  // puts Riga (lng=24°E) clearly on the visible face
           />
         </div>
 

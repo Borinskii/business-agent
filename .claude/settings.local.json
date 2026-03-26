@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(find C:/git_projects/business-agent -name cobe* -type f)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :5173)",
+      "Bash(taskkill /PID 5012 /F)",
+      "Bash(cmd /c \"taskkill /PID 5012 /F\")",
+      "Bash(powershell -Command \"Stop-Process -Id 5012 -Force\")"
     ]
   }
 }

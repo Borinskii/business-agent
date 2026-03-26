@@ -11,7 +11,7 @@ interface GlobeInteractiveProps {
 }
 
 const MARKERS = [
-  { id: "sf", location: [37.78, -122.44], size: 0.05, label: "San Francisco" },
+  { id: "riga", location: [56.95, 24.11], size: 0.05, label: "Riga" },
 ]
 
 export function GlobeInteractive({
@@ -80,37 +80,46 @@ export function GlobeInteractive({
 
     function updateHtmlMarkers(currentPhi: number, currentTheta: number, canvasWidth: number, scale: number) {
       const radius = canvasWidth / 2
-      
+
       MARKERS.forEach(marker => {
         const el = markerElementsRef.current[marker.id]
         if (!el) return
 
         const latR = marker.location[0] * (Math.PI / 180)
-        
-        // Exact formula based on visual alignment:
-        const lngR = marker.location[1] * (Math.PI / 180) + currentPhi - Math.PI / 2
-        
-        const x1 = Math.cos(latR) * Math.sin(lngR)
-        const y1 = Math.sin(latR)
-        const z1 = Math.cos(latR) * Math.cos(lngR)
+        const lngR = marker.location[1] * (Math.PI / 180)
 
-        // Apply theta rotation (globe tilt)
-        const x2 = x1
-        const y2 = y1 * Math.cos(currentTheta) - z1 * Math.sin(currentTheta)
-        const z2 = y1 * Math.sin(currentTheta) + z1 * Math.cos(currentTheta)
+        // Mirror cobe's exact internal coordinate system (from cobe source U([lat,lng])):
+        //   x = cos(lat)*cos(lng),  y = sin(lat),  z = -cos(lat)*sin(lng)
+        // Then cobe's projection O(t) with phi (f) and theta (l):
+        //   c2  = cos(phi)*x + sin(phi)*z          → maps to screen X
+        //   s2  = sin(phi)*sin(theta)*x + cos(theta)*y - cos(phi)*sin(theta)*z → screen Y
+        //   viz = -sin(phi)*cos(theta)*x + sin(theta)*y + cos(phi)*cos(theta)*z → depth
+        // Simplified with angle = phi + lng:
+        const angle    = currentPhi + lngR
+        const cosLat   = Math.cos(latR)
+        const sinLat   = Math.sin(latR)
+        const cosAngle = Math.cos(angle)
+        const sinAngle = Math.sin(angle)
+        const cosTheta = Math.cos(currentTheta)
+        const sinTheta = Math.sin(currentTheta)
 
-        const isFront = z2 > 0
+        const c2  = cosLat * cosAngle
+        const s2  = cosLat * sinAngle * sinTheta + sinLat * cosTheta
+        const viz = sinLat * sinTheta - cosLat * sinAngle * cosTheta
 
-        if (isFront && scale > 0.01) {
+        // Only show when clearly on the front face (viz > 0.15 avoids the limb/edge)
+        if (viz > 0.15 && scale > 0.01) {
           el.style.display = "block"
-          // We apply `0.975` to compensate for the slight visual scale difference 
-          // (Cobe typically renders a bit smaller due to the glow effect)
-          const screenX = x2 * radius * 0.975 + radius
-          const screenY = -y2 * radius * 0.975 + radius
-          
-          el.style.transform = `translate(${screenX}px, ${screenY}px) scale(${scale})`
+          // 0.95 keeps the dot firmly inside the globe surface, away from the glow edge
+          const screenX = c2 * radius * 0.95 + radius
+          const screenY = -s2 * radius * 0.95 + radius
+
+          // Use opacity for fade-in; don't apply scale() to the transform so
+          // CSS transform-origin doesn't shift the dot's position during animation
+          el.style.transformOrigin = "0 0"
+          el.style.transform = `translate(${screenX}px, ${screenY}px)`
           el.style.opacity = String(Math.min(1, scale * 1.5))
-          el.style.zIndex = Math.round(z2 * 100).toString()
+          el.style.zIndex = Math.round(viz * 100).toString()
           el.style.pointerEvents = scale > 0.9 ? "auto" : "none"
         } else {
           el.style.display = "none"
@@ -135,7 +144,7 @@ export function GlobeInteractive({
         baseColor: [0.95, 0.95, 1],
         markerColor: [0.47, 0.25, 0.87],  // #783FDD purple
         glowColor: [0.6, 0.45, 0.9],
-        markers: MARKERS.map(m => ({ location: m.location as [number, number], size: m.size * markerScaleRef.current })),
+        markers: [],
       })
 
       function animate() {
@@ -154,10 +163,7 @@ export function GlobeInteractive({
         globe!.update({
           phi: currentPhi,
           theta: currentTheta,
-          markers: MARKERS.map(m => ({
-            location: m.location as [number, number],
-            size: m.size * markerScaleRef.current
-          }))
+          markers: []
         })
         
         // Update HTML markers positions
