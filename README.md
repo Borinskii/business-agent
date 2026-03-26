@@ -229,3 +229,6 @@ Check the file [release-notes.md](./release-notes.md).
 ## License
 
 The Full Stack FastAPI Template is licensed under the terms of the MIT license.
+
+Comand for run server: bun run dev
+To stop server: powershell wsl -- fuser -k 5173/tcp
