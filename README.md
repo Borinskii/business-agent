@@ -1,3 +1,8 @@
+# Phantom Pipeline
+
+Phantom Pipeline — AI-powered business agent platform for automating sales and outreach workflows. The product includes a landing page with interactive globe, feature showcase, and lead capture form. Built for teams that want to scale pipeline generation without scaling headcount.
+
+
 # Full Stack FastAPI Template
 
 <a href="https://github.com/fastapi/full-stack-fastapi-template/actions?query=workflow%3A%22Test+Docker+Compose%22" target="_blank"><img src="https://github.com/fastapi/full-stack-fastapi-template/workflows/Test%20Docker%20Compose/badge.svg" alt="Test Docker Compose"></a>
