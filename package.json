@@ -1,13 +1,39 @@
 {
-  "name": "fastapi-full-stack-template",
-  "private": true,
-  "workspaces": [
-    "frontend"
-  ],
+  "name": "phantom-pipeline",
+  "version": "1.0.0",
+  "description": "Autonomous AI system to double Salesforge demo bookings",
   "scripts": {
-    "dev": "bun run --filter frontend dev",
-    "lint": "bun run --filter frontend lint",
-    "test": "bun run --filter frontend test",
-    "test:ui": "bun run --filter frontend test:ui"
+    "signal:scan": "npx ts-node src/signal-hunter/cli.ts",
+    "profile:company": "npx ts-node src/profiler/cli.ts",
+    "bridge:upload": "npx ts-node src/salesforge-bridge/cli.ts",
+    "content:generate": "npx ts-node src/pdf-generator/cli.ts",
+    "sequence:create": "npx ts-node src/delivery-engine/cli.ts",
+    "pilot:start": "npx ts-node src/pilot-runner/cli.ts",
+    "pilot:collect": "npx ts-node src/pilot-runner/collect-cli.ts",
+    "orchestrate": "npx ts-node src/orchestrator/index.ts",
+    "dev": "cd src/live-counter && npx next dev",
+    "db:migrate": "npx supabase db push",
+    "db:types": "npx supabase gen types typescript --local > src/types/supabase.ts",
+    "build": "tsc --noEmit",
+    "test": "npx jest"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "@supabase/supabase-js": "^2.100.0",
+    "dotenv": "^17.3.1",
+    "node-fetch": "^3.3.2",
+    "openai": "^6.32.0",
+    "puppeteer": "^21.6.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.11",
+    "@types/node": "^20.10.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

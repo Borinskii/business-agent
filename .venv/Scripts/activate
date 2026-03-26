@@ -37,7 +37,11 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
+<<<<<<< HEAD
 VIRTUAL_ENV="C:\git_projects\business-agent\.venv"
+=======
+VIRTUAL_ENV="C:\Users\borin\PycharmProjects\business-agent\.venv"
+>>>>>>> a7ad5f685fa2b4238f5f37ec573ff35a7c1ed4fe
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
