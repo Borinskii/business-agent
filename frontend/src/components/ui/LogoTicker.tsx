@@ -13,18 +13,12 @@ import {
 } from 'lucide-react';
 
 const foregroundLogos = [
-  { name: 'Salesforce', icon: Cloud },
-  { name: 'HubSpot', icon: Circle },
-  { name: 'Apollo.io', icon: Triangle },
-  { name: 'ZoomInfo', icon: Database },
-  { name: 'Outreach', icon: Box },
-  { name: 'Gong', icon: Hexagon },
-  { name: 'Stripe', icon: Layers },
-  { name: 'Notion', icon: Box },
-  { name: 'Webflow', icon: Triangle },
-  { name: 'Zapier', icon: Zap },
-  { name: 'Airtable', icon: Package },
-  { name: 'OpenAI', icon: Sparkles },
+  { name: 'Shelby County', icon: Globe },
+  { name: 'DevReach', icon: Zap },
+  { name: 'Finstack', icon: Layers },
+  { name: 'TalentFlow', icon: Sparkles },
+  { name: 'Codefine International', icon: Hexagon },
+  { name: 'ECPI University', icon: Shield },
 ];
 
 const backgroundLogos = [
@@ -45,8 +39,8 @@ export function LogoTicker() {
   return (
     <section className="logo-ticker-section">
       <div className="logo-ticker-container">
-        <h2 className="logo-ticker-headline">Built for modern sales & growth teams</h2>
-        <p className="logo-ticker-subtitle">Used by teams at leading SaaS and AI companies</p>
+        <h2 className="logo-ticker-headline">Companies already in the pipeline</h2>
+        <p className="logo-ticker-subtitle">Analyzed, profiled, and outreached — automatically</p>
       </div>
 
       <div className="ticker-mask">

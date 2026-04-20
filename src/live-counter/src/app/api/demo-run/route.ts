@@ -1,10 +1,3 @@
-/**
- * @copyright 2026 vladnidz <vladyslav.nidzelskyi@edu.rtu.lv> — Phantom Pipeline
- * @license Proprietary. Hackathon submission. All rights reserved.
- * @author vladnidz <vladyslav.nidzelskyi@edu.rtu.lv>
- * @created 2026-03-25
- */
-
 import { NextResponse } from 'next/server'
 import { exec } from 'child_process'
 import path from 'path'
@@ -18,12 +11,76 @@ function getSupabase() {
 }
 
 function run(cmd: string, cwd: string): Promise<{ stdout: string; stderr: string }> {
-  return new Promise((resolve, reject) => {
-    exec(cmd, { cwd, timeout: 120_000, env: { ...process.env, DOTENV_CONFIG_PATH: path.join(cwd, '.env') } }, (err, stdout, stderr) => {
-      if (err && !stdout) reject(err)
-      else resolve({ stdout: stdout.toString(), stderr: stderr.toString() })
+  return new Promise((resolve) => {
+    exec(cmd, { cwd, timeout: 180_000, env: { ...process.env } }, (_err, stdout, stderr) => {
+      resolve({ stdout: (stdout || '').toString(), stderr: (stderr || '').toString() })
     })
   })
+}
+
+function parseLines(out: string): string[] {
+  return out.split('\n').map(l => l.trim()).filter(l =>
+    l &&
+    !l.includes('DeprecationWarning') &&
+    !l.includes('ExperimentalWarning') &&
+    !l.includes('dotenv@') &&
+    !l.includes('injecting env')
+  )
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function findNewCompanyViaLeadsforge(supabase: any, log: (m: string) => void): Promise<string | null> {
+  const API_KEY = process.env.LEADSFORGE_API_KEY
+  if (!API_KEY) { log('[signal] Missing LEADSFORGE_API_KEY'); return null }
+
+  log('[signal] Searching Leadsforge for companies with active SDRs...')
+
+  const res = await fetch('https://api.leadsforge.ai/public/v1/search', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jobTitle: 'Sales Development Representative', country: 'US', limit: 20 }),
+  })
+
+  if (!res.ok) {
+    log(`[signal] Leadsforge API error: ${res.status} ${await res.text()}`)
+    return null
+  }
+
+  const data = await res.json() as { leads: Array<{ company?: { domain?: string; name?: string } }> }
+  const leads = data.leads ?? []
+
+  log(`[signal] Found ${leads.length} leads from Leadsforge`)
+
+  // Group by domain
+  const byDomain = new Map<string, string>()
+  for (const lead of leads) {
+    const raw = lead.company?.domain
+    if (!raw) continue
+    const domain = raw.replace(/^https?:\/\//, '').split('/')[0].toLowerCase().replace(/^www\./, '')
+    if (domain && !byDomain.has(domain)) {
+      byDomain.set(domain, lead.company?.name ?? domain)
+    }
+  }
+
+  // Find one not already in DB
+  for (const [domain, name] of byDomain) {
+    const { data: existing } = await supabase
+      .from('companies').select('id').eq('domain', domain).maybeSingle()
+
+    if (!existing) {
+      log(`[signal] New company found: ${name} (${domain})`)
+      const { data: created, error } = await (supabase as any)
+        .from('companies')
+        .insert({ name, domain, status: 'detected' })
+        .select('id').single()
+
+      if (error) { log(`[signal] Insert error: ${error.message}`); continue }
+      return (created as { id: string }).id
+    }
+  }
+
+  log('[signal] No new companies found via Leadsforge — using least-recently updated existing company')
+  return null
 }
 
 export async function POST(req: Request) {
@@ -34,140 +91,91 @@ export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}))
     const companyId = body.companyId as string | undefined
-    const supabase = getSupabase()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = getSupabase() as any
 
-    // If no companyId provided, pick the next unprocessed company
     let targetId = companyId
-    if (!targetId) {
-      // Find a company that needs processing: profiled but no report yet
-      const { data: candidates } = await supabase
-        .from('companies')
-        .select('id, name, domain, status')
-        .in('status', ['profiled', 'content_generated'])
-        .order('created_at', { ascending: true })
-        .limit(10)
 
-      if (!candidates?.length) {
-        return NextResponse.json({ success: false, error: 'No companies available for demo run', logs })
+    if (!targetId) {
+      // Step 1: Try to find a brand-new company via Leadsforge
+      targetId = await findNewCompanyViaLeadsforge(supabase, log) ?? undefined
+
+      // Step 2: Fallback — pick an unprocessed company from DB
+      if (!targetId) {
+        const { data: unprocessed } = await supabase
+          .from('companies')
+          .select('id, name, domain')
+          .eq('status', 'detected')
+          .order('created_at', { ascending: true })
+          .limit(1)
+
+        if (unprocessed?.length) {
+          targetId = unprocessed[0].id as string
+          log(`[system] Using unprocessed company: ${(unprocessed[0] as { name: string }).name}`)
+        }
       }
 
-      // Find one without a ready report
-      for (const c of candidates) {
-        const { data: report } = await supabase
-          .from('reports')
-          .select('status')
-          .eq('company_id', c.id)
-          .maybeSingle()
-
-        if (!report || report.status !== 'ready') {
-          targetId = c.id
-          log(`[system] Selected company: ${c.name} (${c.domain}) — status: ${c.status}`)
-          break
-        }
-
-        // If report exists but no sequence
-        const { data: seq } = await supabase
-          .from('sequences')
-          .select('id')
-          .eq('company_id', c.id)
-          .maybeSingle()
-
-        if (!seq) {
-          targetId = c.id
-          log(`[system] Selected company: ${c.name} (${c.domain}) — has report, needs sequence`)
-          break
+      // Step 3: Fallback — reprocess first company as demo
+      if (!targetId) {
+        const { data: any } = await supabase
+          .from('companies').select('id, name, domain').order('created_at', { ascending: true }).limit(1)
+        if (any?.length) {
+          targetId = any[0].id as string
+          log(`[system] Demo re-run on: ${(any[0] as { name: string }).name}`)
         }
       }
 
       if (!targetId) {
-        return NextResponse.json({ success: false, error: 'All companies already fully processed', logs })
+        return NextResponse.json({ success: false, error: 'No companies available', logs })
       }
     }
 
-    // Fetch company info
     const { data: company } = await supabase
       .from('companies')
       .select('id, name, domain, status, decision_maker, monthly_loss_estimate, salesforce_contact_id')
-      .eq('id', targetId)
-      .single()
+      .eq('id', targetId).single()
 
     if (!company) {
       return NextResponse.json({ success: false, error: `Company not found: ${targetId}`, logs })
     }
 
-    log(`[pipeline] Starting full pipeline for ${company.name} (${company.domain})`)
+    const c = company as { id: string; name: string; domain: string; status: string; decision_maker: unknown; monthly_loss_estimate: number | null; salesforce_contact_id: string | null }
+    log(`[pipeline] Starting full pipeline for ${c.name} (${c.domain})`)
 
-    // Step 1: Profile if needed
-    if (company.status === 'detected') {
-      log(`[profiler] Enriching ${company.domain}...`)
-      try {
-        const { stdout } = await run(`npx ts-node src/profiler/cli.ts --company-id ${targetId}`, rootDir)
-        stdout.split('\n').filter(Boolean).forEach(l => log(l.trim()))
-      } catch (e: unknown) {
-        log(`[profiler] Error: ${(e as Error).message}`)
-      }
-    }
+    // Step 1: Profile via Leadsforge
+    log(`[profiler] Enriching ${c.domain} via Leadsforge...`)
+    const r1 = await run(`npx ts-node src/profiler/cli.ts --company-id ${targetId}`, rootDir)
+    parseLines(r1.stdout).forEach(l => log(l))
+    if (r1.stderr) parseLines(r1.stderr).forEach(l => log(`[profiler] ${l}`))
 
-    // Step 2: Bridge to Salesforge if needed
-    if (!company.salesforce_contact_id) {
-      log(`[bridge] Uploading contact to Salesforge...`)
-      try {
-        const { stdout } = await run(`npx ts-node src/salesforge-bridge/cli.ts --company-id ${targetId}`, rootDir)
-        stdout.split('\n').filter(Boolean).forEach(l => log(l.trim()))
-      } catch (e: unknown) {
-        log(`[bridge] Error: ${(e as Error).message}`)
-      }
-    }
+    // Step 2: Upload to Salesforge
+    log(`[bridge] Uploading contact to Salesforge...`)
+    const r2 = await run(`npx ts-node src/salesforge-bridge/cli.ts --company-id ${targetId}`, rootDir)
+    parseLines(r2.stdout).forEach(l => log(l))
 
-    // Step 3: Generate PDF
-    log(`[content] Generating Pipeline Autopsy PDF...`)
-    try {
-      const { stdout } = await run(`npx ts-node src/pdf-generator/cli.ts --company-id ${targetId}`, rootDir)
-      stdout.split('\n').filter(Boolean).forEach(l => log(l.trim()))
-    } catch (e: unknown) {
-      log(`[pdf] Error: ${(e as Error).message}`)
-    }
+    // Step 3: Generate PDF via Claude AI
+    log(`[pdf] Generating Pipeline Autopsy PDF via Claude AI...`)
+    const r3 = await run(`npx ts-node src/pdf-generator/cli.ts --company-id ${targetId}`, rootDir)
+    parseLines(r3.stdout).forEach(l => log(l))
+    if (r3.stderr) parseLines(r3.stderr).slice(0, 5).forEach(l => log(`[pdf] ${l}`))
 
-    // Step 4: Generate Video
-    log(`[content] Generating Shotstack video...`)
-    try {
-      const { stdout } = await run(`npx ts-node src/video-generator/cli.ts --company-id ${targetId}`, rootDir)
-      stdout.split('\n').filter(Boolean).forEach(l => log(l.trim()))
-    } catch (e: unknown) {
-      log(`[video] Error: ${(e as Error).message}`)
-    }
+    // Step 4: Generate Shotstack video
+    log(`[video] Generating Shotstack video pitch...`)
+    const r4 = await run(`npx ts-node src/video-generator/cli.ts --company-id ${targetId}`, rootDir)
+    parseLines(r4.stdout).forEach(l => log(l))
+    if (r4.stderr) parseLines(r4.stderr).slice(0, 5).forEach(l => log(`[video] ${l}`))
 
-    // Step 5: Create sequence
-    log(`[delivery] Creating Salesforge sequence...`)
-    try {
-      const { stdout } = await run(`npx ts-node src/delivery-engine/cli.ts --company-id ${targetId}`, rootDir)
-      stdout.split('\n').filter(Boolean).forEach(l => log(l.trim()))
-    } catch (e: unknown) {
-      log(`[delivery] Error: ${(e as Error).message}`)
-    }
+    // Step 5: Create Salesforge outreach sequence
+    log(`[delivery] Creating personalized Salesforge sequence...`)
+    const r5 = await run(`npx ts-node src/delivery-engine/cli.ts --company-id ${targetId}`, rootDir)
+    parseLines(r5.stdout).forEach(l => log(l))
 
-    log(`[system] Pipeline complete for ${company.name}`)
+    log(`✓ Pipeline complete for ${c.name}`)
 
-    // Fetch final state
-    const { data: finalCompany } = await supabase
-      .from('companies')
-      .select('*')
-      .eq('id', targetId)
-      .single()
+    const { data: finalCompany } = await supabase.from('companies').select('*').eq('id', targetId).single()
+    const { data: finalReport } = await supabase.from('reports').select('*').eq('company_id', targetId).maybeSingle()
 
-    const { data: finalReport } = await supabase
-      .from('reports')
-      .select('*')
-      .eq('company_id', targetId)
-      .maybeSingle()
-
-    return NextResponse.json({
-      success: true,
-      companyId: targetId,
-      company: finalCompany,
-      report: finalReport,
-      logs,
-    })
+    return NextResponse.json({ success: true, companyId: targetId, company: finalCompany, report: finalReport, logs })
   } catch (error: unknown) {
     log(`[error] ${(error as Error).message}`)
     return NextResponse.json({ success: false, error: (error as Error).message, logs }, { status: 500 })

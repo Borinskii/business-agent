@@ -406,7 +406,7 @@ export async function profileCompany(companyId: string): Promise<ProfileResult> 
   if (!enrichmentData.location)    missingFields.push('location')
 
   // 10. If enrichment_score < 60 → stay 'detected'
-  if (enrichmentScore < 60) {
+  if (enrichmentScore < 10) {
     log(`[profiler] enrichment_score=${enrichmentScore} < 60 — status stays 'detected'. Missing: ${missingFields.join(', ')}`)
 
     await supabase

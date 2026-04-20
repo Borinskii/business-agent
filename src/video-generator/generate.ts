@@ -25,7 +25,7 @@ interface ReportContent {
 
 interface GenerateResult {
   report_id: string
-  video_url: string | null
+  video_url?: string | null
   video_provider: 'shotstack' | 'skipped'
   status: 'ready'
 }
@@ -166,14 +166,7 @@ function buildVideoTimeline(
     }],
   })
 
-  // Company logo
-  tracks.push({
-    clips: [{
-      asset: { type: 'image', src: logoUrl },
-      start: 0.2, length: 6.6, position: 'center', offset: { x: 0.32, y: 0.15 },
-      scale: 0.12, transition: { in: 'fade' }, effect: 'zoomInSlow',
-    }],
-  })
+  // Logo removed — clearbit URLs are unreliable in Shotstack render environment
 
   // ── SCENE 2: NUMBERS (7-15s) ──
   tracks.push({
@@ -547,12 +540,14 @@ export async function generateVideo(companyId: string): Promise<GenerateResult> 
   const t2 = ((Date.now() - startTime) / 1000).toFixed(1)
 
   // ── Update report ──────────────────────────────────────────────────────────
-  await supabase.from('reports').update({
-    video_url: videoUrl,
+  const { error: updateErr } = await supabase.from('reports').update({
+    ...(videoUrl !== null ? { video_url: videoUrl } : {}),
     video_provider: provider,
     video_script: pdfContent,
     ...(videoUrl ? { status: 'ready' } : {}),
   }).eq('id', report.id)
+  if (updateErr) console.error('[!] Report update error:', updateErr.message)
+  else console.log('[✓] Report updated in DB')
 
   // ── Update Salesforge custom_vars with video_url ──────────────────────────
   if (videoUrl && company.salesforce_contact_id && company.decision_maker?.email) {
@@ -583,7 +578,7 @@ export async function generateVideo(companyId: string): Promise<GenerateResult> 
 
   return {
     report_id: report.id,
-    video_url: videoUrl,
+    ...(videoUrl !== null ? { video_url: videoUrl } : {}),
     video_provider: provider,
     status: 'ready',
   }

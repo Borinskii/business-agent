@@ -5,7 +5,6 @@
  * @created 2026-03-25
  */
 
-#!/usr/bin/env ts-node
 /**
  * Signal Hunter CLI
  * Usage: npx ts-node src/signal-hunter/cli.ts --source linkedin --limit 100

@@ -259,6 +259,11 @@ export default function Dashboard() {
           </div>
         </div>
 
+        <div className="flex items-start gap-2 mb-3 py-2.5 px-4 rounded-xl bg-amber-50 border border-amber-200">
+          <p className="text-xs text-amber-700 leading-relaxed">
+            <span className="font-semibold">Demo notice:</span> This is a prototype. Video generation runs on Shotstack free tier — due to limited render quota, videos may not generate alongside every PDF. PDFs are always produced.
+          </p>
+        </div>
         <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -266,7 +271,7 @@ export default function Dashboard() {
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Company</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Decision Maker</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Est. Monthly Loss</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider"><div>Est. Monthly Loss</div><div className="text-slate-400 normal-case font-normal tracking-normal mt-0.5" style={{fontSize:"10px"}}>SDRs × 8h × $28.85/h × 22 days</div></th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Generated Content</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
                 </tr>

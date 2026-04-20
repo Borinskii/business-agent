@@ -5,7 +5,6 @@
  * @created 2026-03-25
  */
 
-#!/usr/bin/env ts-node
 /**
  * Company Profiler CLI
  * Usage: npx ts-node src/profiler/cli.ts --company-id <uuid>

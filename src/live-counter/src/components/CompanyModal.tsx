@@ -77,25 +77,27 @@ export function CompanyModal({ isOpen, onClose, company }: ModalProps) {
                   <FileText className="w-5 h-5 text-indigo-500" />
                   Pipeline Autopsy Report (PDF)
                 </div>
-                <div className="flex-1 p-8 overflow-y-auto flex flex-col items-center justify-center">
+                <div className="flex-1 flex flex-col overflow-hidden">
                   {company.report?.pdf_url ? (
-                    <div className="w-full bg-white shadow-lg rounded-xl border border-slate-200 p-8 flex flex-col items-center">
-                      <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
-                        <FileText className="w-10 h-10 text-indigo-400" />
+                    <>
+                      <div className="flex items-center justify-end px-4 py-1 border-b border-slate-100 bg-white">
+                        <a
+                          href={company.report.pdf_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-semibold transition-colors"
+                        >
+                          <ExternalLink className="w-3 h-3" /> Open in new tab
+                        </a>
                       </div>
-                      <h2 className="text-xl font-bold text-slate-900 mb-2">{company.name}</h2>
-                      <p className="text-slate-500 mb-6 text-center text-sm max-w-xs">Detailed breakdown of pipeline inefficiencies and automation opportunities.</p>
-                      <a
-                        href={company.report.pdf_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors"
-                      >
-                        <ExternalLink className="w-4 h-4" /> Open PDF
-                      </a>
-                    </div>
+                      <iframe
+                        src={company.report.pdf_url}
+                        className="flex-1 w-full"
+                        title="Pipeline Autopsy PDF"
+                      />
+                    </>
                   ) : (
-                    <div className="flex flex-col items-center justify-center text-slate-400">
+                    <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
                       <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin mb-4" />
                       <span className="text-sm">Generating PDF report...</span>
                     </div>
@@ -115,7 +117,16 @@ export function CompanyModal({ isOpen, onClose, company }: ModalProps) {
                       <video
                         src={company.report.video_url}
                         controls
-                        className="w-full h-full object-cover"
+                        autoPlay={false}
+                        playsInline
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          const el = e.currentTarget;
+                          const parent = el.parentElement;
+                          if (parent) {
+                            parent.innerHTML = `<a href="${company.report!.video_url}" target="_blank" rel="noopener noreferrer" class="flex flex-col items-center justify-center h-full gap-3 text-slate-300 hover:text-white transition-colors"><svg xmlns='http://www.w3.org/2000/svg' class='w-12 h-12 opacity-60' viewBox='0 0 24 24' fill='currentColor'><path d='M8 5v14l11-7z'/></svg><span class='text-sm font-semibold'>Open Video</span></a>`;
+                          }
+                        }}
                       />
                     </div>
                   ) : (
