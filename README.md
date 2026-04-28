@@ -1,6 +1,7 @@
 # Phantom Pipeline
 
 LINK:http://104.248.112.79/
+
 Full-stack product prototype for autonomous outbound prospecting.
 
 `Phantom Pipeline` is a public-facing demo and internal workflow concept that shows how an AI-assisted sales system can identify target accounts, frame a pain-driven narrative, and present a highly personalized acquisition journey before a prospect ever books a call.
